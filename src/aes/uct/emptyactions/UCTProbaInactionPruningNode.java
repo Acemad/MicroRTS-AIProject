@@ -14,8 +14,6 @@ public class UCTProbaInactionPruningNode {
     public static long nodeCount = 0; // Total number of nodes created.
     private static float C = 0.05f;
 
-    private float allowProbability = 1f; // For Normal Probabilistic Filtering.
-
     private GameState gameState;
     private UCTProbaInactionPruningNode parent = null;
     private List<UCTProbaInactionPruningNode> children = null;
