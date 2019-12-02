@@ -1,5 +1,8 @@
 import aes.uct.PlainUCT;
+import aes.uct.UCTRandomPruning;
 import aes.uct.emptyactions.PlainUCTNoEmptyAction;
+import aes.uct.emptyactions.UCTFixedInactionPruning;
+import aes.uct.emptyactions.UCTProbaInactionPruning;
 import ai.RandomBiasedAI;
 import ai.abstraction.LightRush;
 import ai.abstraction.WorkerRush;
@@ -15,61 +18,75 @@ import ai.montecarlo.lsi.LSI;
 import ai.portfolio.PortfolioAI;
 import ai.portfolio.portfoliogreedysearch.PGSAI;
 import ai.scv.SCV;
+import org.graphstream.stream.gephi.JSONSender;
 import rts.PhysicalGameState;
 import rts.units.UnitTypeTable;
+import scala.concurrent.duration.FiniteDuration;
+import scala.util.parsing.combinator.testing.Str;
 
 public class Main {
 
-    public static void main(String[] args) throws Exception {
+    static UnitTypeTable unitTypeTable = new UnitTypeTable();
+    static PhysicalGameState physicalGameState;
+    static Experiments experiment;
 
-        UnitTypeTable unitTypeTable = new UnitTypeTable();
-        PhysicalGameState physicalGameState8x8 = PhysicalGameState.
-                load("maps\\8x8\\basesWorkers8x8A.xml", unitTypeTable);
-        PhysicalGameState physicalGameState10x10 = PhysicalGameState.
-                load("maps\\10x10\\basesWorkers10x10.xml", unitTypeTable);
-        PhysicalGameState physicalGameState12x12 = PhysicalGameState.
-                load("maps\\12x12\\basesWorkers12x12.xml", unitTypeTable);
-        PhysicalGameState physicalGameState16x16 = PhysicalGameState.
-                load("maps\\16x16\\basesWorkers16x16.xml", unitTypeTable);
-        PhysicalGameState melee8x8 = PhysicalGameState.
-                load("maps\\melee14x12Mixed18.xml", unitTypeTable);
+    static String[] mapLocations = new String[]
+            {"maps\\8x8\\basesWorkers8x8A.xml",
+            "maps\\10x10\\basesWorkers10x10.xml",
+            "maps\\12x12\\basesWorkers12x12.xml",
+            "maps\\16x16\\basesWorkers16x16.xml",
+            "maps\\melee14x12Mixed18.xml"};
 
+    static final int MAP8X8 = 0, MAP10X10 = 1, MAP12X12 = 2, MAP16X16 = 3, MAP14X12MELEE18X = 4;
+    static final int CYCLES8X8 = 3000, CYCLES10x10 = 3250, CYCLES12x12 = 3500, CYCLES16x16 = 4000;
 
-        AI maxPlayer = new PlainUCTNoEmptyAction(unitTypeTable); // Player at the top, Blue colored.
-        AI minPlayer = new PlainUCT(unitTypeTable); // Player at the Bottom, Red colored.
+    static AI maxPlayer = new UCTProbaInactionPruning(unitTypeTable, 0.6f), // Player at the top, Blue colored.
+              minPlayer = new PlainUCT(unitTypeTable); // Player at the Bottom, Red colored.
+
+    public static void initialize(int mapLocationIndex, int maxCycles) throws Exception {
+        physicalGameState = PhysicalGameState.load(mapLocations[mapLocationIndex], unitTypeTable);
+
+        experiment = new Experiments(maxPlayer, minPlayer, unitTypeTable, physicalGameState);
+        experiment.setMaxCycles(maxCycles);
 
         System.out.println("Blue (Player 0 Max) : " + maxPlayer.getClass().getSimpleName());
         System.out.println("Red  (Player 1 Min) : " + minPlayer.getClass().getSimpleName());
+    }
 
-        Experiments experiment = new Experiments(maxPlayer, minPlayer, unitTypeTable, physicalGameState8x8);
-        experiment.maxCycles = 3000;
+    public static void main(String[] args) throws Exception {
 
+        initialize(MAP8X8, CYCLES8X8);
+        System.out.println("Start Time : " + java.time.LocalTime.now());
 //        experiment.runSingleMatch(false, true, true, true, false);
 
         // Send to Gephy.
-//        JSONSender senderUCT = new JSONSender("localhost", 8080, "workspace1");
-//        JSONSender senderPlainUCT = new JSONSender("localhost", 8080, "workspace2");
+//        JSONSender sender = new JSONSender("localhost", 8080, "workspace1");
+
         // Tree Visualisation
 
-//        senderUCT.setDebug(true);
-//        senderPlainUCT.setDebug(true);
-//
-//        experiment.graph.addSink(senderUCT);
-//        experiment.constructTree(((UCT)maxPlayer).getTree());
-//        experiment.resetGraph();
-//        Thread.sleep(1000);
-//        experiment.graph.addSink(senderPlainUCT);
-//        experiment.constructTree(((PlainUCT)minPlayer).getTree());
-//        experiment.resetGraph();
+        /*sender.setDebug(true);
+        experiment.graph.addSink(sender);
+        experiment.constructTree(((UCTProbaInactionPruning)maxPlayer).getTree());
+        experiment.resetGraph();*/
 
-        //experiment.constructTree(((UCT)minPlayer).getTree());
-//        experiment.maxTree.addAttribute("ui.stylesheet", "graph { fill-color: grey; }");
 
-//        Viewer maxView = experiment.maxTree.display();
-        //Viewer minView = experiment.minTree.display();
+//        experiment.runMultipleMatches(20,false,true, false,false);
+//        experiment.runMultipleMatches(20,true, true, true, true);
+//        experiment.runMultipleMatchesSymmetric(10,true,false);
 
-        experiment.runMultipleMatches(20, false, true, false, false);
-        experiment.runMultipleMatches(20,true, true, true, true);
+        testRPPParameters(50, true,false);
+
+        System.out.println("End Time : " + java.time.LocalTime.now());
         System.exit(0);
+    }
+
+    public static void testRPPParameters(int totalNumberOfMatches, boolean visualize, boolean printAIStats) throws Exception {
+        float[] parameters = new float[] {0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1f};
+
+        for (float parameter : parameters) {
+            ((UCTProbaInactionPruning)maxPlayer).setInactionAllowProbability(parameter);
+            System.out.println("** Starting Experiment with p = " + parameter);
+            experiment.runMultipleMatchesSymmetric(totalNumberOfMatches, visualize, printAIStats);
+        }
     }
 }
