@@ -9,6 +9,7 @@ import ai.evaluation.EvaluationFunction;
 import ai.evaluation.SimpleSqrtEvaluationFunction3;
 import rts.GameState;
 import rts.PlayerAction;
+import rts.units.Unit;
 import rts.units.UnitTypeTable;
 
 import java.util.List;
@@ -25,6 +26,7 @@ public class UCTProbaInactionPruning extends AIWithComputationBudget implements 
     private int simulationTime;
     private int depthLimit;
     private float inactionAllowProbability;
+    private float currentInactionAllowProbability;
 
     private int player;
     private double evaluationBound;
@@ -108,6 +110,29 @@ public class UCTProbaInactionPruning extends AIWithComputationBudget implements 
         initialGameState = gameState;
         evaluationBound = evaluationFunction.upperBound(gameState);
         statTotalRunsThisMove = 0; //Stats.
+
+        // Adapting the inaction allow probability with respect to the number of units owned by the player.
+//        int[] nbUnits = getActiveUnitCountForEachPlayer();
+////        System.out.println("P0 " + nbUnits[player] + "P1 " + nbUnits[1-player]);
+//        if (nbUnits[player] <= nbUnits[1 - player])
+//            currentInactionAllowPorbability = 0.9f;
+//        else
+//            currentInactionAllowPorbability = inactionAllowProbability;
+        currentInactionAllowProbability = inactionAllowProbability;
+    }
+
+    /**
+     * Returns the number of active units for each player. By active units we mean all unit types except structures
+     * such as Bases and Barracks.
+     * @return an int[] containing the number of units for each player index.
+     */
+    private int[] getActiveUnitCountForEachPlayer() {
+        int[] counts = new int[] {0,0};
+        for (Unit unit : initialGameState.getUnits())
+            if (unit.getPlayer() >= 0 &&
+                    !unit.getType().name.equals("Base") && !unit.getType().name.equals("Barracks"))
+                counts[unit.getPlayer()]++;
+        return counts;
     }
 
     /**
@@ -140,7 +165,7 @@ public class UCTProbaInactionPruning extends AIWithComputationBudget implements 
     private void monteCarloRun(long cutOffTime) throws Exception {
 
         // (1) Start with selecting a node. (Expanded)
-        UCTProbaInactionPruningNode selected = tree.selectLeaf(player, cutOffTime, depthLimit, evaluationBound, inactionAllowProbability);
+        UCTProbaInactionPruningNode selected = tree.selectLeaf(player, cutOffTime, depthLimit, evaluationBound, currentInactionAllowProbability);
 
         if (selected != null) {
             // (2) Start a simulation from the new state.
@@ -264,5 +289,13 @@ public class UCTProbaInactionPruning extends AIWithComputationBudget implements 
 
     public UCTProbaInactionPruningNode getTree() {
         return tree;
+    }
+
+    public void setInactionAllowProbability(float inactionAllowProbability) {
+        this.inactionAllowProbability = inactionAllowProbability;
+    }
+
+    public float getInactionAllowProbability() {
+        return inactionAllowProbability;
     }
 }

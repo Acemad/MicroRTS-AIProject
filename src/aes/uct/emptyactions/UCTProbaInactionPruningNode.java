@@ -100,6 +100,7 @@ public class UCTProbaInactionPruningNode {
             //hasMoreActions is used to bypass having to execute getNextAction when there are no more actions.
             if (hasMoreActions) {
                 PlayerAction action = actionGenerator.getNextInactionFilteredActionProbabilistic(cutOffTime, inactionAllowProbability); // Normal Probabilistic Filtering
+//                System.out.println(action);
                 if (action != null) { //Create a new node and add it to the tree. (Expansion)
                     GameState newGameState = gameState.cloneIssue(action);
                     UCTProbaInactionPruningNode newNode = new UCTProbaInactionPruningNode(newGameState.clone(), this, player);
