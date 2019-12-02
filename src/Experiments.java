@@ -47,8 +47,7 @@ public class Experiments {
         JFrame window = null;
         if (visualize)
             window = PhysicalGameStatePanel.newVisualizer(gameState,640,640, false, PhysicalGameStatePanel.COLORSCHEME_BLACK);
-        else
-            System.out.println("[Running]");
+
 
         long nextUpdateTime = System.currentTimeMillis() + period;
         do {
@@ -64,8 +63,10 @@ public class Experiments {
                 gameOver = gameState.cycle();
                 if (visualize)
                     window.repaint();
-                else
+                else {
+                    System.out.print("[Running] ");
                     printCurrentCycle();
+                }
                 nextUpdateTime += period;
             } else {
                 try {

@@ -74,7 +74,7 @@ public class Main {
 //        experiment.runMultipleMatches(20,true, true, true, true);
 //        experiment.runMultipleMatchesSymmetric(10,true,false);
 
-        testRPPParameters(50, true,false);
+        testRPPParameters(50, false,false);
 
         System.out.println("End Time : " + java.time.LocalTime.now());
         System.exit(0);
