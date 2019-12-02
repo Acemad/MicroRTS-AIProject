@@ -1,4 +1,5 @@
 import aes.uct.PlainUCTNode;
+import aes.uct.emptyactions.UCTProbaInactionPruningNode;
 import ai.core.AI;
 import ai.mcts.uct.UCTNode;
 import gui.PhysicalGameStatePanel;
@@ -64,7 +65,7 @@ public class Experiments {
                 if (visualize)
                     window.repaint();
                 else
-                    printCurrentCylce();
+                    printCurrentCycle();
                 nextUpdateTime += period;
             } else {
                 try {
@@ -79,18 +80,21 @@ public class Experiments {
         maxPlayer.gameOver(gameState.winner());
         minPlayer.gameOver(gameState.winner());
 
+        if (visualize) window.dispose();
+
         if (gameState.winner() < 0) {
             draws++;
             return "No One (Draw)";
         }
         else if (gameState.winner() == maxID) {
             maxWins++;
-            return maxPlayer.getClass().getSimpleName() + " (Player 0 Max)";
+            return maxPlayer.getClass().getSimpleName() + " (P0Max)";
         }
         else {
             minWins++;
-            return minPlayer.getClass().getSimpleName() + " (Player 1 Min)";
+            return minPlayer.getClass().getSimpleName() + " (P1Min)";
         }
+
     }
 
     public void runSingleMatch(boolean switchPos, boolean visualize, boolean clearStats, boolean printStats, boolean reset) throws Exception{
@@ -133,31 +137,54 @@ public class Experiments {
      * @param visualize
      * @throws Exception
      */
-    public void runMultipleMatches(int numMatches, boolean switchPos, boolean visualize, boolean clearStats, boolean printStats) throws Exception{
+    public void runMultipleMatches(int numMatches, boolean switchPos, boolean visualize, boolean clearStats, boolean printAIStats, boolean printFinalStats) throws Exception{
 
         if (switchPos) switchPositions();
 
         for (int i = 0; i < numMatches; i++) {
             String outcome = runSingleMatch(visualize);
-            System.out.println("Match " + i + " Winner : " + outcome + " in " + gameState.getTime() + " cycle.");
-            printAIStats();
+            System.out.print("Match " + i + ": Winner " + outcome + " in " + gameState.getTime() + " cycle. ");
+            printCurrentStats();
+            if (printAIStats) printAIStats();
             resetAll();
         }
 
         if (switchPos) switchPositions();
-        if (printStats) printFinalStats();
+        if (printFinalStats) printFinalStats();
         if (clearStats) resetStats();
     }
 
-    public void printCurrentCylce() {
+    public void runMultipleMatchesSymmetric(int totalNumber, boolean visualize, boolean printAIStats) throws Exception {
+        if (totalNumber % 2 != 0)
+            throw new Exception("The total number of matches must be even");
+
+        runMultipleMatches(totalNumber / 2,false, visualize, false, printAIStats, false);
+        System.out.println("** Switching Positions **");
+        runMultipleMatches(totalNumber / 2,true, visualize, true, printAIStats, true);
+    }
+
+    public void printCurrentCycle() {
         System.out.print("Cycle : " + gameState.getTime() + "\r");
     }
 
     public void printFinalStats() {
         System.out.println("Final Stats : **************************************************************");
-        System.out.println(maxPlayer.getClass().getSimpleName() + " (Player 0 Max) Wins : " + maxWins);
-        System.out.println(minPlayer.getClass().getSimpleName() + " (Player 1 Min) Wins : " + minWins);
-        System.out.println("Draws : " + draws);
+        System.out.println(maxPlayer.getClass().getSimpleName() + " (P0 Max) Wins: " + maxWins);
+        System.out.println(minPlayer.getClass().getSimpleName() + " (P1 Min) Wins: " + minWins);
+        System.out.println("Draws: " + draws);
+        printCurrentStats();
+    }
+
+    public void printCurrentStats() {
+        float score0 = ((float) maxWins + (float) draws / 2) / (maxWins + minWins + draws);
+        float score1 = ((float) minWins + (float) draws / 2) / (maxWins + minWins + draws);
+
+        System.out.print("[P0Wins: " + maxWins + ", P1Wins: " + minWins + ", Draws: " + draws + "]" +
+                " (P0: " );
+        System.out.format("%.3f", score0);
+        System.out.print(")" + " (P1: ");
+        System.out.format("%.3f", score1);
+        System.out.print(")\n");
     }
 
     public void resetGraph() {
@@ -203,13 +230,31 @@ public class Experiments {
         }
     }
 
+    public void constructTree(UCTProbaInactionPruningNode node) {
+        if (node == null)
+            return;
+
+        String nodeId = String.valueOf(node.getNodeId());
+        graph.addNode(nodeId).addAttribute("Visits", node.getVisitCount());
+        graph.getNode(nodeId).addAttribute("Eval", String.valueOf(node.getAccumulatedEvaluation()));
+
+        if (node.getParent() != null) {
+            String parentId = String.valueOf(node.getParent().getNodeId());
+            graph.addEdge(parentId + "->" + nodeId, parentId, nodeId, true);
+        }
+
+        if (!node.getChildren().isEmpty()) {
+            for (UCTProbaInactionPruningNode child : node.getChildren()) {
+                constructTree(child);
+            }
+        }
+    }
+
     public void switchPositions() {
         int temp = maxID;
         maxID = minID;
         minID = temp;
     }
-
-
 
     public void setMaxCycles(int maxCycles) {
         this.maxCycles = maxCycles;
@@ -227,5 +272,19 @@ public class Experiments {
         return period;
     }
 
+    public void setMaxPlayer(AI maxPlayer) {
+        this.maxPlayer = maxPlayer;
+    }
 
+    public AI getMaxPlayer() {
+        return maxPlayer;
+    }
+
+    public void setMinPlayer(AI minPlayer) {
+        this.minPlayer = minPlayer;
+    }
+
+    public AI getMinPlayer() {
+        return minPlayer;
+    }
 }
