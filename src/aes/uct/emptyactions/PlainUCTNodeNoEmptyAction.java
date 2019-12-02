@@ -14,8 +14,8 @@ public class PlainUCTNodeNoEmptyAction {
     private static float C = 0.05f;
 
     private int allowedWaitActions = 200; // For Normal Fixed Filtering.
-    private float allowProbability = 0.6f; // For Normal Probabilistic Filtering.
-    private float waitProbability = 1f; // For Inverse filtering (1 : Inverse Filtering deactivated, allow all wait actions)
+    private float allowProbability = 1f; // For Normal Probabilistic Filtering.
+    private float waitProbability = 0.1f; // For Inverse filtering (1 : Inverse Filtering deactivated, allow all wait actions)
 
     private GameState gameState;
     private PlainUCTNodeNoEmptyAction parent = null;
@@ -103,8 +103,8 @@ public class PlainUCTNodeNoEmptyAction {
             //hasMoreActions is used to bypass having to execute getNextAction when there are no more actions.
             if (hasMoreActions) {
 //                PlayerAction action = actionGenerator.getNextInactionFilteredAction(cutOffTime, allowedWaitActions); // Normal Fixed Filtering.
-                PlayerAction action = actionGenerator.getNextInactionFilteredActionProbabilistic(cutOffTime, allowProbability); // Normal Probabilistic Filtering
-//                PlayerAction action = actionGenerator.getNextAction(cutOffTime); // For Inverse Filtering or No Filtering
+//                PlayerAction action = actionGenerator.getNextInactionFilteredActionProbabilistic(cutOffTime, allowProbability); // Normal Probabilistic Filtering
+                PlayerAction action = actionGenerator.getNextAction(cutOffTime); // For Inverse Filtering or No Filtering
                 if (action != null) { //Create a new node and add it to the tree. (Expansion)
                     GameState newGameState = gameState.cloneIssue(action);
                     PlainUCTNodeNoEmptyAction newNode = new PlainUCTNodeNoEmptyAction(newGameState.clone(), this, player);

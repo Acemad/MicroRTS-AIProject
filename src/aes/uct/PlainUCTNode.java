@@ -99,6 +99,7 @@ public class PlainUCTNode {
             //hasMoreActions is used to bypass having to execute getNextAction when there are no more actions.
             if (hasMoreActions) {
                 PlayerAction action = actionGenerator.getNextAction(cutOffTime);
+//                System.out.println(action);
                 if (action != null) { //Create a new node and add it to the tree. (Expansion)
                     GameState newGameState = gameState.cloneIssue(action);
                     PlainUCTNode newNode = new PlainUCTNode(newGameState.clone(), this, player);
