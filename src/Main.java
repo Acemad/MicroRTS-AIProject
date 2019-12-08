@@ -21,8 +21,6 @@ import ai.scv.SCV;
 import org.graphstream.stream.gephi.JSONSender;
 import rts.PhysicalGameState;
 import rts.units.UnitTypeTable;
-import scala.concurrent.duration.FiniteDuration;
-import scala.util.parsing.combinator.testing.Str;
 
 public class Main {
 
@@ -54,9 +52,8 @@ public class Main {
     }
 
     public static void main(String[] args) throws Exception {
-
-        initialize(MAP8X8, CYCLES8X8);
         System.out.println("Start Time : " + java.time.LocalTime.now());
+        testRPPParameters(MAP12X12, CYCLES12x12, 50, false,false);
 //        experiment.runSingleMatch(false, true, true, true, false);
 
         // Send to Gephy.
@@ -74,13 +71,13 @@ public class Main {
 //        experiment.runMultipleMatches(20,true, true, true, true);
 //        experiment.runMultipleMatchesSymmetric(10,true,false);
 
-        testRPPParameters(50, false,false);
-
         System.out.println("End Time : " + java.time.LocalTime.now());
         System.exit(0);
     }
 
-    public static void testRPPParameters(int totalNumberOfMatches, boolean visualize, boolean printAIStats) throws Exception {
+    public static void testRPPParameters(int mapLocationIndex, int maxCycles, int totalNumberOfMatches,
+                                         boolean visualize, boolean printAIStats) throws Exception {
+        initialize(mapLocationIndex, maxCycles);
         float[] parameters = new float[] {0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1f};
 
         for (float parameter : parameters) {
