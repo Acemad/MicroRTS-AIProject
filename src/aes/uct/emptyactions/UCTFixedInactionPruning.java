@@ -59,7 +59,7 @@ public class UCTFixedInactionPruning extends AIWithComputationBudget implements 
     /**
      * Constructs the controller with the specified time and iterations budget
      *
-     * @param timeBudget       time in milisseconds
+     * @param timeBudget       time in milliseconds
      * @param iterationsBudget number of allowed iterations
      */
     public UCTFixedInactionPruning(int timeBudget, int iterationsBudget, int simulationTime, int depthLimit, int allowedInactions, AI playoutAI,
@@ -264,5 +264,13 @@ public class UCTFixedInactionPruning extends AIWithComputationBudget implements 
 
     public UCTFixedInactionPruningNode getTree() {
         return tree;
+    }
+
+    public void setAllowedInactions(int allowedInactions) {
+        this.allowedInactions = allowedInactions;
+    }
+
+    public int getAllowedInactions() {
+        return allowedInactions;
     }
 }
