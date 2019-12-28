@@ -32,12 +32,13 @@ public class Experiments {
     public Graph graph = new SingleGraph("Tree");
 
 
-    public Experiments(AI maxPlayer, AI minPlayer, UnitTypeTable unitTypeTable, PhysicalGameState physicalGameState) {
+    public Experiments(AI maxPlayer, AI minPlayer, UnitTypeTable unitTypeTable, PhysicalGameState physicalGameState, int maxCycles) {
         this.maxPlayer = maxPlayer;
         this.minPlayer = minPlayer;
         this.physicalGameStateBackup = physicalGameState; // To be able to reset the GameState to its initial state.
         this.physicalGameState = physicalGameState.clone();
         this.unitTypeTable = unitTypeTable;
+        this.maxCycles = maxCycles;
         gameState = new GameState(this.physicalGameState, unitTypeTable);
         resetStats();
     }
