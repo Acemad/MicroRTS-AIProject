@@ -266,4 +266,12 @@ public class UCTRandomPruning extends AIWithComputationBudget implements Interru
     public UCTRandomPruningNode getTree() {
         return tree;
     }
+
+    public void setPruneProbability(float pruneProbability) {
+        this.pruneProbability = pruneProbability;
+    }
+
+    public float getPruneProbability() {
+        return pruneProbability;
+    }
 }
