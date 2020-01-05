@@ -1,4 +1,5 @@
 import aes.uct.PlainUCT;
+import aes.uct.UCTRandomPruning;
 import aes.uct.emptyactions.UCTFixedInactionPruning;
 import aes.uct.emptyactions.UCTProbaInactionPruning;
 import ai.core.AI;
@@ -36,7 +37,9 @@ public class Main {
     public static void main(String[] args) throws Exception {
         System.out.println("Start Time : " + java.time.LocalDateTime.now());
 //        testAllRPPParametersVsUCT(MAP8X8, CYCLES8X8, 10, false,false);
-        testAllRFPParametersVsUCT(MAP12X12, CYCLES12x12, 50, false, false);
+//        testAllRFPParametersVsUCT(MAP16X16, CYCLES16x16, 50, false, false);
+//        testRPPParameterVsUCT(MAP12X12, CYCLES12x12, 50, 1.0f, 1, false, false);
+        testAllRandomPruningVsUCT(MAP8X8, CYCLES8X8, 50, false, false);
 //        experiment.runSingleMatch(false, true, true, true, false);
 
         // Send to Gephy.
@@ -63,12 +66,27 @@ public class Main {
         AI maxPlayer = new UCTFixedInactionPruning(unitTypeTable, 0), // Player at the top, Blue colored.
            minPlayer = new PlainUCT(unitTypeTable); // Player at the Bottom, Red colored.
 
-        int[] parameters = new int[] {0, 1, 5, 10, 50, 100, 500, 1000};
+        int[] parameters = new int[] {0, 1, 5, 10, 50, 100, 500, 1000, 5000, 10000};
         initialize(maxPlayer, minPlayer, mapLocationIndex, maxCycles);
         for (int parameter : parameters) {
             ((UCTFixedInactionPruning)experiment.getMaxPlayer()).setAllowedInactions(parameter);
 //            ((UCTProbaInactionPruning)maxPlayer).setInactionAllowProbability(parameter);
             System.out.println("** Starting Experiment with allowed inactions = " + parameter);
+            experiment.runMultipleMatchesSymmetric(totalNumberOfMatches, visualize, printAIStats);
+        }
+    }
+
+    public static void testRFPParameterVsUCT(int mapLocationIndex, int maxCycles, int totalNumberOfMatches, int parameter,
+                                             int numberOfTests, boolean visualize, boolean printAIStats) throws Exception {
+
+        AI maxPlayer = new UCTFixedInactionPruning(unitTypeTable, parameter),
+           minPlayer = new PlainUCT(unitTypeTable);
+
+        initialize(maxPlayer, minPlayer, mapLocationIndex, maxCycles);
+
+        for (int testId = 0; testId < numberOfTests; testId++) {
+            System.out.println("** Starting experiment " + testId +
+                    " with p = " + ((UCTFixedInactionPruning)experiment.getMaxPlayer()).getAllowedInactions());
             experiment.runMultipleMatchesSymmetric(totalNumberOfMatches, visualize, printAIStats);
         }
     }
@@ -104,10 +122,19 @@ public class Main {
         }
     }
 
+    public static void testAllRandomPruningVsUCT(int mapLocationIndex, int maxCycles, int totalNumberOfMatches, boolean visualize,
+                                                 boolean printAIStats) throws Exception {
 
+        AI maxPlayer = new UCTRandomPruning(unitTypeTable, 0f),
+           minPlayer = new PlainUCT(unitTypeTable);
 
+        float[] parameters = new float[] {0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1f};
+        initialize(maxPlayer, minPlayer, mapLocationIndex, maxCycles);
 
-
-
-
+        for (float parameter : parameters) {
+            ((UCTRandomPruning)experiment.getMaxPlayer()).setPruneProbability(parameter);
+            System.out.println("** Starting Experiment with p = " + ((UCTRandomPruning)experiment.getMaxPlayer()).getPruneProbability());
+            experiment.runMultipleMatchesSymmetric(totalNumberOfMatches, visualize, printAIStats);
+        }
+    }
 }
