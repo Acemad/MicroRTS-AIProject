@@ -5,6 +5,7 @@ import aes.uct.emptyactions.UCTProbaInactionPruning;
 import ai.core.AI;
 import rts.PhysicalGameState;
 import rts.units.UnitTypeTable;
+import tournaments.RoundRobinTournament;
 
 public class Main {
 
@@ -39,7 +40,14 @@ public class Main {
 //        testAllRPPParametersVsUCT(MAP8X8, CYCLES8X8, 10, false,false);
 //        testAllRFPParametersVsUCT(MAP16X16, CYCLES16x16, 50, false, false);
 //        testRPPParameterVsUCT(MAP12X12, CYCLES12x12, 50, 1.0f, 1, false, false);
-        testAllRandomPruningVsUCT(MAP8X8, CYCLES8X8, 50, false, false);
+//        testRandomPruningParameterVsUCT(MAP8X8, CYCLES8X8, 2, 0.9f, 1, false, false);
+
+        for (int i = 0; i < 2; i++) {
+            System.out.println("Starting Experiment " + i + " ##################################################");
+            testAllRandomPruningParametersVsUCT(MAP12X12, CYCLES12x12, 50, false, false);
+//            testAllRPPParametersVsUCT(MAP16X16, CYCLES16x16, 50, false, false);
+        }
+
 //        experiment.runSingleMatch(false, true, true, true, false);
 
         // Send to Gephy.
@@ -122,8 +130,8 @@ public class Main {
         }
     }
 
-    public static void testAllRandomPruningVsUCT(int mapLocationIndex, int maxCycles, int totalNumberOfMatches, boolean visualize,
-                                                 boolean printAIStats) throws Exception {
+    public static void testAllRandomPruningParametersVsUCT(int mapLocationIndex, int maxCycles, int totalNumberOfMatches, boolean visualize,
+                                                           boolean printAIStats) throws Exception {
 
         AI maxPlayer = new UCTRandomPruning(unitTypeTable, 0f),
            minPlayer = new PlainUCT(unitTypeTable);
@@ -132,9 +140,26 @@ public class Main {
         initialize(maxPlayer, minPlayer, mapLocationIndex, maxCycles);
 
         for (float parameter : parameters) {
-            ((UCTRandomPruning)experiment.getMaxPlayer()).setPruneProbability(parameter);
-            System.out.println("** Starting Experiment with p = " + ((UCTRandomPruning)experiment.getMaxPlayer()).getPruneProbability());
+            ((UCTRandomPruning)experiment.getMaxPlayer()).setAllowProbability(parameter);
+            System.out.println("** Starting Experiment with p = " + ((UCTRandomPruning)experiment.getMaxPlayer()).getAllowProbability());
             experiment.runMultipleMatchesSymmetric(totalNumberOfMatches, visualize, printAIStats);
         }
     }
+
+    public static void testRandomPruningParameterVsUCT(int mapLocationIndex, int maxCycles, int totalNumberOfMatches, float parameter,
+                                                       int numberOfTests, boolean visualize, boolean printAIStats) throws Exception {
+
+        AI maxPlayer = new UCTRandomPruning(unitTypeTable, parameter),
+                minPlayer = new PlainUCT(unitTypeTable);
+
+        initialize(maxPlayer, minPlayer, mapLocationIndex, maxCycles);
+
+        for (int testId = 0; testId < numberOfTests; testId++) {
+            System.out.println("** Starting experiment " + testId +
+                    " with p = " + ((UCTRandomPruning)experiment.getMaxPlayer()).getAllowProbability());
+            experiment.runMultipleMatchesSymmetric(totalNumberOfMatches, visualize, printAIStats);
+        }
+    }
+
+
 }
