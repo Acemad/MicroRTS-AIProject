@@ -25,7 +25,7 @@ public class UCTRandomPruning extends AIWithComputationBudget implements Interru
 
     private int simulationTime;
     private int depthLimit;
-    private float pruneProbability;
+    private float allowProbability;
 
     private int player;
     private double evaluationBound;
@@ -50,11 +50,11 @@ public class UCTRandomPruning extends AIWithComputationBudget implements Interru
      * Constructs the controller with a set of default parameters, except the inactionAllowProbability.
      *
      * @param unitTypeTable a unitTypeTable.
-     * @param pruneProbability The probability of allowing inactive combinations.
+     * @param allowProbability The probability of allowing inactive combinations.
      */
-    public UCTRandomPruning(UnitTypeTable unitTypeTable, float pruneProbability) {
+    public UCTRandomPruning(UnitTypeTable unitTypeTable, float allowProbability) {
         this(unitTypeTable);
-        this.pruneProbability = pruneProbability;
+        this.allowProbability = allowProbability;
     }
 
     /**
@@ -63,12 +63,12 @@ public class UCTRandomPruning extends AIWithComputationBudget implements Interru
      * @param timeBudget       time in milliseconds
      * @param iterationsBudget number of allowed iterations
      */
-    public UCTRandomPruning(int timeBudget, int iterationsBudget, int simulationTime, int depthLimit, float pruneProbability, AI playoutAI,
+    public UCTRandomPruning(int timeBudget, int iterationsBudget, int simulationTime, int depthLimit, float allowProbability, AI playoutAI,
                             EvaluationFunction evaluationFunction) {
         super(timeBudget, iterationsBudget);
         this.simulationTime = simulationTime;
         this.depthLimit = depthLimit;
-        this.pruneProbability = pruneProbability;
+        this.allowProbability = allowProbability;
         this.playoutAI = playoutAI;
         this.evaluationFunction = evaluationFunction;
     }
@@ -141,7 +141,7 @@ public class UCTRandomPruning extends AIWithComputationBudget implements Interru
     private void monteCarloRun(long cutOffTime) throws Exception {
 
         // (1) Start with selecting a node. (Expanded)
-        UCTRandomPruningNode selected = tree.selectLeaf(player, cutOffTime, depthLimit, evaluationBound, pruneProbability);
+        UCTRandomPruningNode selected = tree.selectLeaf(player, cutOffTime, depthLimit, evaluationBound, allowProbability);
 
         if (selected != null) {
             // (2) Start a simulation from the new state.
@@ -231,7 +231,7 @@ public class UCTRandomPruning extends AIWithComputationBudget implements Interru
      */
     @Override
     public AI clone() {
-        return new UCTRandomPruning(TIME_BUDGET, ITERATIONS_BUDGET, simulationTime, depthLimit, pruneProbability, playoutAI, evaluationFunction);
+        return new UCTRandomPruning(TIME_BUDGET, ITERATIONS_BUDGET, simulationTime, depthLimit, allowProbability, playoutAI, evaluationFunction);
     }
 
     /**
@@ -267,11 +267,11 @@ public class UCTRandomPruning extends AIWithComputationBudget implements Interru
         return tree;
     }
 
-    public void setPruneProbability(float pruneProbability) {
-        this.pruneProbability = pruneProbability;
+    public void setAllowProbability(float allowProbability) {
+        this.allowProbability = allowProbability;
     }
 
-    public float getPruneProbability() {
-        return pruneProbability;
+    public float getAllowProbability() {
+        return allowProbability;
     }
 }

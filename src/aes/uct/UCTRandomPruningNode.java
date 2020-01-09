@@ -88,7 +88,7 @@ public class UCTRandomPruningNode {
      * @param depthLimit maximum depth allowed.
      * @return the selected leaf node.
      */
-    public UCTRandomPruningNode selectLeaf(int player, long cutOffTime, int depthLimit, double evaluationBound, float pruneProbability) throws Exception {
+    public UCTRandomPruningNode selectLeaf(int player, long cutOffTime, int depthLimit, double evaluationBound, float allowProbability) throws Exception {
 
         // Return this node in case the depth limit is reached.
         if (depth >= depthLimit)
@@ -99,7 +99,8 @@ public class UCTRandomPruningNode {
         if (actionGenerator != null) {
             //hasMoreActions is used to bypass having to execute getNextAction when there are no more actions.
             if (hasMoreActions) {
-                PlayerAction action = actionGenerator.getNextActionRandomlyPruned(cutOffTime, pruneProbability); // Random Pruning
+                PlayerAction action = actionGenerator.getNextActionRandomlyPruned(cutOffTime, allowProbability); // Random Pruning
+//                System.out.println(action);
                 if (action != null) { //Create a new node and add it to the tree. (Expansion)
                     GameState newGameState = gameState.cloneIssue(action);
                     UCTRandomPruningNode newNode = new UCTRandomPruningNode(newGameState.clone(), this, player);
@@ -125,7 +126,7 @@ public class UCTRandomPruningNode {
 
         if (bestChild == null) return this; //Node has no children. No more leafs.
 
-        return bestChild.selectLeaf(player, cutOffTime, depthLimit, evaluationBound, pruneProbability); // Recursively chose best node in each ply.
+        return bestChild.selectLeaf(player, cutOffTime, depthLimit, evaluationBound, allowProbability); // Recursively chose best node in each ply.
     }
 
 
