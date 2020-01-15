@@ -1,11 +1,11 @@
 import aes.uct.PlainUCT;
-import aes.uct.UCTRandomPruning;
+import aes.uct.UCTRandomPruningFixed;
+import aes.uct.UCTRandomPruningProba;
 import aes.uct.emptyactions.UCTFixedInactionPruning;
 import aes.uct.emptyactions.UCTProbaInactionPruning;
 import ai.core.AI;
 import rts.PhysicalGameState;
 import rts.units.UnitTypeTable;
-import tournaments.RoundRobinTournament;
 
 public class Main {
 
@@ -44,7 +44,7 @@ public class Main {
 
         for (int i = 0; i < 2; i++) {
             System.out.println("Starting Experiment " + i + " ##################################################");
-            testAllRandomPruningParametersVsUCT(MAP12X12, CYCLES12x12, 50, false, false);
+            testAllRandomFixedPruningParametersVsUCT(MAP8X8, CYCLES8X8, 50, false, false);
 //            testAllRPPParametersVsUCT(MAP16X16, CYCLES16x16, 50, false, false);
         }
 
@@ -133,15 +133,15 @@ public class Main {
     public static void testAllRandomPruningParametersVsUCT(int mapLocationIndex, int maxCycles, int totalNumberOfMatches, boolean visualize,
                                                            boolean printAIStats) throws Exception {
 
-        AI maxPlayer = new UCTRandomPruning(unitTypeTable, 0f),
+        AI maxPlayer = new UCTRandomPruningProba(unitTypeTable, 0f),
            minPlayer = new PlainUCT(unitTypeTable);
 
         float[] parameters = new float[] {0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1f};
         initialize(maxPlayer, minPlayer, mapLocationIndex, maxCycles);
 
         for (float parameter : parameters) {
-            ((UCTRandomPruning)experiment.getMaxPlayer()).setAllowProbability(parameter);
-            System.out.println("** Starting Experiment with p = " + ((UCTRandomPruning)experiment.getMaxPlayer()).getAllowProbability());
+            ((UCTRandomPruningProba)experiment.getMaxPlayer()).setAllowProbability(parameter);
+            System.out.println("** Starting Experiment with p = " + ((UCTRandomPruningProba)experiment.getMaxPlayer()).getAllowProbability());
             experiment.runMultipleMatchesSymmetric(totalNumberOfMatches, visualize, printAIStats);
         }
     }
@@ -149,17 +149,35 @@ public class Main {
     public static void testRandomPruningParameterVsUCT(int mapLocationIndex, int maxCycles, int totalNumberOfMatches, float parameter,
                                                        int numberOfTests, boolean visualize, boolean printAIStats) throws Exception {
 
-        AI maxPlayer = new UCTRandomPruning(unitTypeTable, parameter),
+        AI maxPlayer = new UCTRandomPruningProba(unitTypeTable, parameter),
                 minPlayer = new PlainUCT(unitTypeTable);
 
         initialize(maxPlayer, minPlayer, mapLocationIndex, maxCycles);
 
         for (int testId = 0; testId < numberOfTests; testId++) {
             System.out.println("** Starting experiment " + testId +
-                    " with p = " + ((UCTRandomPruning)experiment.getMaxPlayer()).getAllowProbability());
+                    " with p = " + ((UCTRandomPruningProba)experiment.getMaxPlayer()).getAllowProbability());
             experiment.runMultipleMatchesSymmetric(totalNumberOfMatches, visualize, printAIStats);
         }
     }
+
+    public static void testAllRandomFixedPruningParametersVsUCT(int mapLocationIndex, int maxCycles, int totalNumberOfMatches, boolean visualize,
+                                                                boolean printAIStats) throws Exception {
+
+        AI maxPlayer = new UCTRandomPruningFixed(unitTypeTable, 0),
+           minPlayer = new PlainUCT(unitTypeTable);
+
+        int[] parameters = new int[] {0, 1, 5, 10, 50, 100, 500, 1000, 5000, 10000};
+        initialize(maxPlayer, minPlayer, mapLocationIndex, maxCycles);
+
+        for (int parameter : parameters) {
+            ((UCTRandomPruningFixed)experiment.getMaxPlayer()).setAllowedActionsCount(parameter);
+            System.out.println("** Starting Experiment with p = " + ((UCTRandomPruningFixed)experiment.getMaxPlayer()).getAllowedActionsCount());
+            experiment.runMultipleMatchesSymmetric(totalNumberOfMatches, visualize, printAIStats);
+        }
+    }
+
+
 
 
 }
