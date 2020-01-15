@@ -14,14 +14,14 @@ import rts.units.UnitTypeTable;
 
 import java.util.List;
 
-public class UCTRandomPruning extends AIWithComputationBudget implements InterruptibleAI {
+public class UCTRandomPruningProba extends AIWithComputationBudget implements InterruptibleAI {
 
     // Members : *********************************************************************************
 
     private GameState initialGameState = null;
     private EvaluationFunction evaluationFunction;
     private AI playoutAI;
-    private UCTRandomPruningNode tree = null;
+    private UCTRandomPruningProbaNode tree = null;
 
     private int simulationTime;
     private int depthLimit;
@@ -41,7 +41,7 @@ public class UCTRandomPruning extends AIWithComputationBudget implements Interru
     /**
      * Constructs the controller with a set of predetermined parameters.
      */
-    public UCTRandomPruning(UnitTypeTable unitTypeTable) {
+    public UCTRandomPruningProba(UnitTypeTable unitTypeTable) {
         this(100, -1, 100, 10, 0.5f,
                 new RandomBiasedAI(), new SimpleSqrtEvaluationFunction3());
     }
@@ -52,7 +52,7 @@ public class UCTRandomPruning extends AIWithComputationBudget implements Interru
      * @param unitTypeTable a unitTypeTable.
      * @param allowProbability The probability of allowing inactive combinations.
      */
-    public UCTRandomPruning(UnitTypeTable unitTypeTable, float allowProbability) {
+    public UCTRandomPruningProba(UnitTypeTable unitTypeTable, float allowProbability) {
         this(unitTypeTable);
         this.allowProbability = allowProbability;
     }
@@ -63,8 +63,8 @@ public class UCTRandomPruning extends AIWithComputationBudget implements Interru
      * @param timeBudget       time in milliseconds
      * @param iterationsBudget number of allowed iterations
      */
-    public UCTRandomPruning(int timeBudget, int iterationsBudget, int simulationTime, int depthLimit, float allowProbability, AI playoutAI,
-                            EvaluationFunction evaluationFunction) {
+    public UCTRandomPruningProba(int timeBudget, int iterationsBudget, int simulationTime, int depthLimit, float allowProbability, AI playoutAI,
+                                 EvaluationFunction evaluationFunction) {
         super(timeBudget, iterationsBudget);
         this.simulationTime = simulationTime;
         this.depthLimit = depthLimit;
@@ -104,7 +104,7 @@ public class UCTRandomPruning extends AIWithComputationBudget implements Interru
     @Override
     public void startNewComputation(int player, GameState gameState) throws Exception {
         UCTProbaInactionPruningNode.nodeCount = 0; //Stats.
-        tree = new UCTRandomPruningNode(gameState, null, player);
+        tree = new UCTRandomPruningProbaNode(gameState, null, player);
         this.player = player;
         initialGameState = gameState;
         evaluationBound = evaluationFunction.upperBound(gameState);
@@ -141,7 +141,7 @@ public class UCTRandomPruning extends AIWithComputationBudget implements Interru
     private void monteCarloRun(long cutOffTime) throws Exception {
 
         // (1) Start with selecting a node. (Expanded)
-        UCTRandomPruningNode selected = tree.selectLeaf(player, cutOffTime, depthLimit, evaluationBound, allowProbability);
+        UCTRandomPruningProbaNode selected = tree.selectLeaf(player, cutOffTime, depthLimit, evaluationBound, allowProbability);
 
         if (selected != null) {
             // (2) Start a simulation from the new state.
@@ -202,9 +202,9 @@ public class UCTRandomPruning extends AIWithComputationBudget implements Interru
             return new PlayerAction();
 
         int bestChildIndex = -1;
-        UCTRandomPruningNode bestChild = null;
+        UCTRandomPruningProbaNode bestChild = null;
         for (int i = 0; i < tree.getChildren().size(); i++) {
-            UCTRandomPruningNode child = tree.getChildren().get(i);
+            UCTRandomPruningProbaNode child = tree.getChildren().get(i);
             if (bestChild == null || child.getVisitCount() > bestChild.getVisitCount() ||
                 (child.getVisitCount() == bestChild.getVisitCount() &&
                  child.getAccumulatedEvaluation() > bestChild.getAccumulatedEvaluation())) {
@@ -231,7 +231,7 @@ public class UCTRandomPruning extends AIWithComputationBudget implements Interru
      */
     @Override
     public AI clone() {
-        return new UCTRandomPruning(TIME_BUDGET, ITERATIONS_BUDGET, simulationTime, depthLimit, allowProbability, playoutAI, evaluationFunction);
+        return new UCTRandomPruningProba(TIME_BUDGET, ITERATIONS_BUDGET, simulationTime, depthLimit, allowProbability, playoutAI, evaluationFunction);
     }
 
     /**
@@ -263,7 +263,7 @@ public class UCTRandomPruning extends AIWithComputationBudget implements Interru
         statTotalRunsThisMove = 0;
     }
 
-    public UCTRandomPruningNode getTree() {
+    public UCTRandomPruningProbaNode getTree() {
         return tree;
     }
 

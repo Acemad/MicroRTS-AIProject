@@ -7,7 +7,7 @@ import rts.PlayerAction;
 import java.util.ArrayList;
 import java.util.List;
 
-public class UCTRandomPruningNode {
+public class UCTRandomPruningProbaNode {
 
     // Members : *********************************************************************************************
 
@@ -15,8 +15,8 @@ public class UCTRandomPruningNode {
     private static float C = 0.05f;
 
     private GameState gameState;
-    private UCTRandomPruningNode parent = null;
-    private List<UCTRandomPruningNode> children = null;
+    private UCTRandomPruningProbaNode parent = null;
+    private List<UCTRandomPruningProbaNode> children = null;
     private List<PlayerAction> actions = null;
 //    private PlayerActionGenerator actionGenerator = null;
     private CustomPlayerActionGenerator actionGenerator = null;
@@ -40,7 +40,7 @@ public class UCTRandomPruningNode {
      * @param parent
      * @throws Exception
      */
-    public UCTRandomPruningNode(GameState gameState, UCTRandomPruningNode parent, int player) throws Exception {
+    public UCTRandomPruningProbaNode(GameState gameState, UCTRandomPruningProbaNode parent, int player) throws Exception {
         // Associate the game state to the node, and set its parent.
         this.gameState = gameState;
         this.parent = parent;
@@ -88,7 +88,7 @@ public class UCTRandomPruningNode {
      * @param depthLimit maximum depth allowed.
      * @return the selected leaf node.
      */
-    public UCTRandomPruningNode selectLeaf(int player, long cutOffTime, int depthLimit, double evaluationBound, float allowProbability) throws Exception {
+    public UCTRandomPruningProbaNode selectLeaf(int player, long cutOffTime, int depthLimit, double evaluationBound, float allowProbability) throws Exception {
 
         // Return this node in case the depth limit is reached.
         if (depth >= depthLimit)
@@ -103,7 +103,7 @@ public class UCTRandomPruningNode {
 //                System.out.println(action);
                 if (action != null) { //Create a new node and add it to the tree. (Expansion)
                     GameState newGameState = gameState.cloneIssue(action);
-                    UCTRandomPruningNode newNode = new UCTRandomPruningNode(newGameState.clone(), this, player);
+                    UCTRandomPruningProbaNode newNode = new UCTRandomPruningProbaNode(newGameState.clone(), this, player);
                     children.add(newNode);
                     actions.add(action);
                     return newNode;
@@ -115,8 +115,8 @@ public class UCTRandomPruningNode {
 
         // Chose best child, using UCB1. i.e. Retrieve the element that maximizes UCB1
         double bestScore = 0;
-        UCTRandomPruningNode bestChild = null;
-        for (UCTRandomPruningNode child : children) {
+        UCTRandomPruningProbaNode bestChild = null;
+        for (UCTRandomPruningProbaNode child : children) {
             double value = childNodeUCBValue(child, evaluationBound);
             if (bestChild == null || bestScore < value) {
                 bestScore = value;
@@ -136,7 +136,7 @@ public class UCTRandomPruningNode {
      * @param node the node to calculate evaluation for.
      * @return the evaluation score.
      */
-    public double childNodeUCBValue(UCTRandomPruningNode node, double evaluationBound) {
+    public double childNodeUCBValue(UCTRandomPruningProbaNode node, double evaluationBound) {
         double exploitationTerm = node.accumulatedEvaluation / node.visitCount;
         double explorationTerm = Math.sqrt((Math.log(visitCount)) / node.visitCount);
         // exploitationTerm is bounded in [-1,1] (-1 favourable to min and +1 favourable to max).
@@ -177,11 +177,11 @@ public class UCTRandomPruningNode {
         this.visitCount++;
     }
 
-    public UCTRandomPruningNode getParent() {
+    public UCTRandomPruningProbaNode getParent() {
         return parent;
     }
 
-    public List<UCTRandomPruningNode> getChildren() {
+    public List<UCTRandomPruningProbaNode> getChildren() {
         return children;
     }
 
