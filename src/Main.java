@@ -1,6 +1,8 @@
 import aes.uct.PlainUCT;
 import aes.uct.UCTRandomPruningFixed;
 import aes.uct.UCTRandomPruningProba;
+import aes.uct.emptyactions.UCTDynamicFixedInactionPruning;
+import aes.uct.emptyactions.UCTDynamicProbaInactionPruning;
 import aes.uct.emptyactions.UCTFixedInactionPruning;
 import aes.uct.emptyactions.UCTProbaInactionPruning;
 import ai.core.AI;
@@ -42,9 +44,9 @@ public class Main {
 //        testRPPParameterVsUCT(MAP12X12, CYCLES12x12, 50, 1.0f, 1, false, false);
 //        testRandomPruningParameterVsUCT(MAP8X8, CYCLES8X8, 2, 0.9f, 1, false, false);
 
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < 1; i++) {
             System.out.println("Starting Experiment " + i + " ##################################################");
-            testAllRandomFixedPruningParametersVsUCT(MAP8X8, CYCLES8X8, 50, false, false);
+            testAllRandomFixedPruningParametersVsUCT(MAP16X16, CYCLES16x16, 50, false, false);
 //            testAllRPPParametersVsUCT(MAP16X16, CYCLES16x16, 50, false, false);
         }
 
@@ -177,7 +179,83 @@ public class Main {
         }
     }
 
+    // D-RPP Parameter Test
+    public static void testAllDynamicRPPParametersVsUCT(int mapLocationIndex, int maxCycles, int totalNumberOfMatches,
+                                                        boolean visualize, boolean printAIStats) throws Exception {
 
+        AI maxPlayer = new UCTDynamicProbaInactionPruning(unitTypeTable),
+           minPlayer = new PlainUCT(unitTypeTable);
+
+        // 8x8 : p1 = 0 --- -> p2 test {0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1f}
+        // 12x12 : p1 = 0.2 -> p2 test {0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1f}
+        // 16x16 : p1 = 0.3 -> p2 test {0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1f}
+
+        float[] parameters;
+        initialize(maxPlayer, minPlayer, mapLocationIndex, maxCycles);
+        switch (mapLocationIndex) {
+            case MAP8X8 :
+                parameters = new float[] {0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1f};
+                ((UCTDynamicProbaInactionPruning)experiment.getMaxPlayer()).setInactionAllowProbabilityOutnumbers(0f);
+                break;
+            case MAP12X12 :
+                parameters = new float[] {0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1f};
+                ((UCTDynamicProbaInactionPruning)experiment.getMaxPlayer()).setInactionAllowProbabilityOutnumbers(0.2f);
+                break;
+            case MAP16X16 :
+                parameters = new float[] {0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1f};
+                ((UCTDynamicProbaInactionPruning)experiment.getMaxPlayer()).setInactionAllowProbabilityOutnumbers(0.3f);
+                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + mapLocationIndex);
+        }
+
+        for (float parameter : parameters) {
+            ((UCTDynamicProbaInactionPruning)experiment.getMaxPlayer()).setInactionAllowProbabilityOutnumbered(parameter);
+            System.out.println("** Starting Experiment with p1 (outnumbers) = " +
+                    ((UCTDynamicProbaInactionPruning)experiment.getMaxPlayer()).getInactionAllowProbabilityOutnumbers() +
+                    " and p2 (outnumbered) = " +
+                    ((UCTDynamicProbaInactionPruning)experiment.getMaxPlayer()).getInactionAllowProbabilityOutnumbered());
+            experiment.runMultipleMatchesSymmetric(totalNumberOfMatches, visualize, printAIStats);
+        }
+
+    }
+
+    // D-RFP Parameter Test
+    public static void testAllDynamicRFPParametersVsUCT(int mapLocationIndex, int maxCycles, int totalNumberOfMatches,
+                                                        boolean visualize, boolean printAIStats) throws Exception {
+
+        AI maxPlayer = new UCTDynamicFixedInactionPruning(unitTypeTable),
+           minPlayer = new PlainUCT(unitTypeTable);
+
+        // 8x8 : n1 = 1 - -> n2 test {5, 10, 50, 100, 500, 1000, 5000, 10000}
+        // 12x12 : n1 = 5 -> n2 test {10, 50, 100, 500, 1000, 5000, 10000}
+        // 16x16 : n1 = 1 -> n2 test {5, 10, 50, 100, 500, 1000, 5000, 10000}
+
+        int[] parameters;
+        initialize(maxPlayer, minPlayer, mapLocationIndex, maxCycles);
+        switch (mapLocationIndex) {
+            case MAP8X8 :
+            case MAP16X16 :
+                parameters = new int[] {5, 10, 50, 100, 500, 1000, 5000, 10000};
+                ((UCTDynamicFixedInactionPruning)experiment.getMaxPlayer()).setAllowedInactionsOutnumbers(1);
+                break;
+            case MAP12X12 :
+                parameters = new int[] {10, 50, 100, 500, 1000, 5000, 10000};
+                ((UCTDynamicFixedInactionPruning)experiment.getMaxPlayer()).setAllowedInactionsOutnumbers(5);
+                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + mapLocationIndex);
+        }
+
+        for (int parameter : parameters) {
+            ((UCTDynamicFixedInactionPruning)experiment.getMaxPlayer()).setAllowedInactionsOutnumbered(parameter);
+            System.out.println("** Starting Experiment with n1 (outnumbers) = " +
+                    ((UCTDynamicFixedInactionPruning)experiment.getMaxPlayer()).getAllowedInactionsOutnumbers() +
+                    " and n2 (outnumbered) = " +
+                    ((UCTDynamicFixedInactionPruning)experiment.getMaxPlayer()).getAllowedInactionsOutnumbered());
+            experiment.runMultipleMatchesSymmetric(totalNumberOfMatches, visualize, printAIStats);
+        }
+    }
 
 
 }
