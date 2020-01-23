@@ -8,6 +8,12 @@ import aes.uct.emptyactions.UCTProbaInactionPruning;
 import ai.core.AI;
 import rts.PhysicalGameState;
 import rts.units.UnitTypeTable;
+import tournaments.RoundRobinTournament;
+
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 
 public class Main {
 
@@ -44,11 +50,14 @@ public class Main {
 //        testRPPParameterVsUCT(MAP12X12, CYCLES12x12, 50, 1.0f, 1, false, false);
 //        testRandomPruningParameterVsUCT(MAP8X8, CYCLES8X8, 2, 0.9f, 1, false, false);
 
-        for (int i = 0; i < 1; i++) {
-            System.out.println("Starting Experiment " + i + " ##################################################");
-            testAllRandomFixedPruningParametersVsUCT(MAP16X16, CYCLES16x16, 50, false, false);
+//        for (int i = 0; i < 2; i++) {
+//            System.out.println("Starting Experiment " + i + " ##################################################");
+//            testAllDynamicRFPParametersVsUCT(MAP16X16, CYCLES16x16, 50, false, false);
+//            testAllRandomFixedPruningParametersVsUCT(MAP16X16, CYCLES16x16, 50, false, false);
 //            testAllRPPParametersVsUCT(MAP16X16, CYCLES16x16, 50, false, false);
-        }
+//        }
+
+        testDynamicRPPParameterVsUCT(MAP16X16, CYCLES16x16, 50, 0, 10, false, false);
 
 //        experiment.runSingleMatch(false, true, true, true, false);
 
@@ -255,6 +264,81 @@ public class Main {
                     ((UCTDynamicFixedInactionPruning)experiment.getMaxPlayer()).getAllowedInactionsOutnumbered());
             experiment.runMultipleMatchesSymmetric(totalNumberOfMatches, visualize, printAIStats);
         }
+    }
+
+    public static void testDynamicRPPParameterVsUCT(int mapLocationIndex, int maxCycles, int totalNumberOfMatches, float parameter,
+                                             int numberOfTests, boolean visualize, boolean printAIStats) throws Exception {
+
+        AI maxPlayer = new UCTDynamicProbaInactionPruning(unitTypeTable),
+           minPlayer = new PlainUCT(unitTypeTable);
+
+        initialize(maxPlayer, minPlayer, mapLocationIndex, maxCycles);
+
+        ((UCTDynamicProbaInactionPruning)experiment.getMaxPlayer()).setInactionAllowProbabilityOutnumbered(parameter);
+
+        switch (mapLocationIndex) {
+            case MAP8X8 :
+                ((UCTDynamicProbaInactionPruning)experiment.getMaxPlayer()).setInactionAllowProbabilityOutnumbers(0f);
+                break;
+            case MAP12X12 :
+                ((UCTDynamicProbaInactionPruning)experiment.getMaxPlayer()).setInactionAllowProbabilityOutnumbers(0.2f);
+                break;
+            case MAP16X16 :
+                ((UCTDynamicProbaInactionPruning)experiment.getMaxPlayer()).setInactionAllowProbabilityOutnumbers(0.3f);
+                break;
+        }
+
+        for (int testId = 0; testId < numberOfTests; testId++) {
+            System.out.println("** Starting Experiment " + testId + " with p1 (outnumbers) = " +
+                    ((UCTDynamicProbaInactionPruning) experiment.getMaxPlayer()).getInactionAllowProbabilityOutnumbers() +
+                    " and p2 (outnumbered) = " +
+                    ((UCTDynamicProbaInactionPruning) experiment.getMaxPlayer()).getInactionAllowProbabilityOutnumbered());
+            experiment.runMultipleMatchesSymmetric(totalNumberOfMatches, visualize, printAIStats);
+        }
+    }
+
+    public static void testDynamicRFPParameterVsUCT(int mapLocationIndex, int maxCycles, int totalNumberOfMatches, int parameter,
+                                             int numberOfTests, boolean visualize, boolean printAIStats) throws Exception {
+
+        AI maxPlayer = new UCTDynamicFixedInactionPruning(unitTypeTable),
+           minPlayer = new PlainUCT(unitTypeTable);
+
+        initialize(maxPlayer, minPlayer, mapLocationIndex, maxCycles);
+
+        ((UCTDynamicFixedInactionPruning)experiment.getMaxPlayer()).setAllowedInactionsOutnumbered(parameter);
+
+        switch (mapLocationIndex) {
+            case MAP8X8 :
+            case MAP16X16 :
+                ((UCTDynamicFixedInactionPruning)experiment.getMaxPlayer()).setAllowedInactionsOutnumbers(1);
+                break;
+            case MAP12X12 :
+                ((UCTDynamicFixedInactionPruning)experiment.getMaxPlayer()).setAllowedInactionsOutnumbers(5);
+                break;
+        }
+
+        for (int testId = 0; testId < numberOfTests; testId++) {
+            System.out.println("** Starting Experiment " + testId + " with n1 (outnumbers) = " +
+                    ((UCTDynamicFixedInactionPruning) experiment.getMaxPlayer()).getAllowedInactionsOutnumbers() +
+                    " and n2 (outnumbered) = " +
+                    ((UCTDynamicFixedInactionPruning) experiment.getMaxPlayer()).getAllowedInactionsOutnumbered());
+            experiment.runMultipleMatchesSymmetric(totalNumberOfMatches, visualize, printAIStats);
+        }
+    }
+
+    // WIP
+    public void runTournament() throws Exception {
+        List<AI> AIs = new ArrayList<>();
+        List<String> maps = new ArrayList<>();
+        AIs.add(new PlainUCT(unitTypeTable));
+        AIs.add(new UCTProbaInactionPruning(unitTypeTable));
+        maps.add(mapLocations[MAP8X8]);
+        RoundRobinTournament tournament = new RoundRobinTournament(AIs);
+
+        tournament.runTournament(-1, maps, 25, CYCLES8X8, 100, -1,
+                1000, 1000, true, false, false,
+                false, false, unitTypeTable, null,
+                new PrintWriter(System.out), new PrintWriter(System.out), null);
     }
 
 
