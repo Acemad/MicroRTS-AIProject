@@ -6,11 +6,15 @@ import aes.uct.emptyactions.UCTDynamicProbaInactionPruning;
 import aes.uct.emptyactions.UCTFixedInactionPruning;
 import aes.uct.emptyactions.UCTProbaInactionPruning;
 import ai.core.AI;
+import ai.mcts.naivemcts.NaiveMCTS;
 import rts.PhysicalGameState;
 import rts.units.UnitTypeTable;
 import tournaments.RoundRobinTournament;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.io.PrintWriter;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -56,8 +60,18 @@ public class Main {
 //            testAllRandomFixedPruningParametersVsUCT(MAP16X16, CYCLES16x16, 50, false, false);
 //            testAllRPPParametersVsUCT(MAP16X16, CYCLES16x16, 50, false, false);
 //        }
+        List<AI> AIs = new ArrayList<>();
+        AIs.add(new UCTFixedInactionPruning(unitTypeTable,1));
+        AIs.add(new UCTProbaInactionPruning(unitTypeTable,0f));
+        AIs.add(new UCTDynamicFixedInactionPruning(unitTypeTable,1,0));
+        AIs.add(new UCTDynamicProbaInactionPruning(unitTypeTable,0f,0.1f));
 
-        testDynamicRPPParameterVsUCT(MAP16X16, CYCLES16x16, 50, 0, 10, false, false);
+        runTournament(AIs, MAP8X8, CYCLES8X8, 100, "tournament8x8.csv");
+//        testDynamicRFPParameterVsUCT(MAP8X8, CYCLES8X8, 50, 0, 10, true, false);
+//        AI mP = new UCTDynamicFixedInactionPruning(unitTypeTable,0,1);
+//        runOneMatch(mP, new PlainUCT(unitTypeTable), MAP8X8, 1, true, false);
+
+//        runMatches(mP, new NaiveMCTS(unitTypeTable),MAP8X8, CYCLES8X8,50, false, false);
 
 //        experiment.runSingleMatch(false, true, true, true, false);
 
@@ -326,20 +340,38 @@ public class Main {
         }
     }
 
-    // WIP
-    public void runTournament() throws Exception {
-        List<AI> AIs = new ArrayList<>();
-        List<String> maps = new ArrayList<>();
-        AIs.add(new PlainUCT(unitTypeTable));
-        AIs.add(new UCTProbaInactionPruning(unitTypeTable));
-        maps.add(mapLocations[MAP8X8]);
-        RoundRobinTournament tournament = new RoundRobinTournament(AIs);
-
-        tournament.runTournament(-1, maps, 25, CYCLES8X8, 100, -1,
-                1000, 1000, true, false, false,
-                false, false, unitTypeTable, null,
-                new PrintWriter(System.out), new PrintWriter(System.out), null);
+    public static void runOneMatch(AI maxPlayer, AI minPlayer, int mapLocationIndex, int maxCycles, boolean visualize,
+                                   boolean printAIStats) throws Exception {
+        initialize(maxPlayer, minPlayer, mapLocationIndex, maxCycles);
+        experiment.runSingleMatch(false, visualize, true, printAIStats, true);
     }
+
+    public static void runMatches(AI maxPlayer, AI minPlayer, int mapLocationIndex, int maxCycles, int numberOfMatches,
+                                  boolean visualize, boolean printAIStats) throws Exception {
+        initialize(maxPlayer, minPlayer, mapLocationIndex, maxCycles);
+        experiment.runMultipleMatchesSymmetric(numberOfMatches, visualize, printAIStats);
+    }
+
+    // WIP
+    public static void runTournament(List<AI> AIs, int mapLocationIndex, int maxCycles,
+                                     int iterations, String filename) throws Exception {
+
+        RoundRobinTournament tournament = new RoundRobinTournament(AIs);
+        List<String> maps = new ArrayList<>();
+        maps.add(mapLocations[mapLocationIndex]);
+
+        File outputFile = new File(filename);
+        Writer output = new FileWriter(outputFile);
+
+        tournament.setUSE_CONTINUING_ON_INTERRUPTIBLE(false);
+
+        tournament.runTournament(-1, maps, iterations, maxCycles, 100, -1,
+                1000, 1000, true, false,
+                false, false, false, unitTypeTable, null, output,
+                new PrintWriter(System.out), null);
+    }
+
+
 
 
 }
