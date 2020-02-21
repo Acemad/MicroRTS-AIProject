@@ -107,14 +107,16 @@ public class Main {
 
 //        runTournament(AIs16x16, MAP16X16, CYCLES16x16, 100, "tournament16x16.csv");
 //        testDynamicRFPParameterVsUCT(MAP8X8, CYCLES8X8, 50, 0, 10, true, false);
-        AI mP = new UCTDynamicFixedInactionPruning(unitTypeTable,0,1);
+//        AI mP = new UCTDynamicFixedInactionPruning(unitTypeTable,0,1);
 //        runOneMatch(mP, new PlainUCT(unitTypeTable), MAP8X8, 1, true, false);
 
-        System.out.println("P = 0.7 , 16x16");
-        runMatches(new NMCTSRandomInactivityFilteringProba(unitTypeTable,0.7f),
+        System.out.println("Map 8x8");
+        testAllNMCTSRIFFParameters(MAP8X8, CYCLES8X8, 100, false, false);
+
+        /*runMatches(new NMCTSRandomInactivityFilteringFixed(unitTypeTable,0),
                    new NaiveMCTS(unitTypeTable),
-                   MAP16X16, CYCLES16x16, 100,
-                   false, false);
+                   MAP12X12, CYCLES12x12, 100,
+                   false, false);*/
 
 //        experiment.runSingleMatch(false, true, true, true, false);
 
@@ -242,6 +244,39 @@ public class Main {
             ((UCTRandomPruningFixed)experiment.getMaxPlayer()).setAllowedActionsCount(parameter);
             System.out.println("** Starting Experiment with p = " + ((UCTRandomPruningFixed)experiment.getMaxPlayer()).getAllowedActionsCount());
             experiment.runMultipleMatchesSymmetric(totalNumberOfMatches, visualize, printAIStats);
+        }
+    }
+
+    public static void testAllNMCTSRIFFParameters(int mapLocationIndex, int maxCycles, int numberOfMatches, boolean visualize,
+                                                  boolean printAIStats) throws Exception {
+        AI maxPlayer = new NMCTSRandomInactivityFilteringFixed(unitTypeTable),
+           minPlayer = new NaiveMCTS(unitTypeTable);
+
+        int[] parameters = new int[] {0, 1, 5, 10, 50, 100, 500, 1000, 5000, 10000};
+        initialize(maxPlayer, minPlayer, mapLocationIndex, maxCycles);
+
+        for (int parameter : parameters) {
+            ((NMCTSRandomInactivityFilteringFixed)experiment.getMaxPlayer()).setMaxAllowedInactions(parameter);
+            System.out.println("** Starting Experiment with n = " +
+                    ((NMCTSRandomInactivityFilteringFixed)experiment.getMaxPlayer()).getMaxAllowedInactions());
+            experiment.runMultipleMatchesSymmetric(numberOfMatches, visualize, printAIStats);
+        }
+    }
+
+    public static void testAllNMCTSRIFPParameters(int mapLocationIndex, int maxCycles, int numberOfMatches, boolean visualize,
+                                                  boolean printAIStats) throws Exception {
+        AI maxPlayer = new NMCTSRandomInactivityFilteringProba(unitTypeTable),
+           minPlayer = new NaiveMCTS(unitTypeTable);
+
+
+        float[] parameters = new float[] {0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1f};
+        initialize(maxPlayer, minPlayer, mapLocationIndex, maxCycles);
+
+        for (float parameter : parameters) {
+            ((NMCTSRandomInactivityFilteringProba)experiment.getMaxPlayer()).setAllowProbability(parameter);
+            System.out.println("** Starting Experiment with n = " +
+                    ((NMCTSRandomInactivityFilteringProba)experiment.getMaxPlayer()).getAllowProbability());
+            experiment.runMultipleMatchesSymmetric(numberOfMatches, visualize, printAIStats);
         }
     }
 
