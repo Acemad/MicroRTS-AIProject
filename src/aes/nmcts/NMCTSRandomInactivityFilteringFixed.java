@@ -289,4 +289,12 @@ public class NMCTSRandomInactivityFilteringFixed extends AIWithComputationBudget
 
         return parameters;
     }
+
+    public void setMaxAllowedInactions(int maxAllowedInactions) {
+        this.maxAllowedInactions = maxAllowedInactions;
+    }
+
+    public int getMaxAllowedInactions() {
+        return maxAllowedInactions;
+    }
 }

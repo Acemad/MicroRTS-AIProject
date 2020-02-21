@@ -289,4 +289,12 @@ public class NMCTSRandomInactivityFilteringProba extends AIWithComputationBudget
 
         return parameters;
     }
+
+    public float getAllowProbability() {
+        return allowProbability;
+    }
+
+    public void setAllowProbability(float allowProbability) {
+        this.allowProbability = allowProbability;
+    }
 }
