@@ -1,3 +1,6 @@
+import Standard.ImprovedStrategyTactics;
+import Standard.StrategyTactics;
+import aes.nmcts.*;
 import aes.uct.PlainUCT;
 import aes.uct.UCTRandomPruningFixed;
 import aes.uct.UCTRandomPruningProba;
@@ -5,9 +8,34 @@ import aes.uct.emptyactions.UCTDynamicFixedInactionPruning;
 import aes.uct.emptyactions.UCTDynamicProbaInactionPruning;
 import aes.uct.emptyactions.UCTFixedInactionPruning;
 import aes.uct.emptyactions.UCTProbaInactionPruning;
+import ai.GNS.Droplet;
+import ai.JZ.MixedBot;
+import ai.PVAI.PVAIML_ED;
+import ai.RandomBiasedAI;
+import ai.abstraction.LightRush;
+import ai.abstraction.WorkerRush;
+import ai.abstraction.partialobservability.POLightRush;
+import ai.abstraction.pathfinding.PathFinding;
+import ai.ahtn.AHTNAI;
+import ai.asymmetric.SSS.SSSmRTS;
+import ai.ccg.MicroCCG_v2;
+import ai.competition.IzanagiBot.Izanagi;
+import ai.competition.capivara.Capivara;
+import ai.competition.capivara.ImprovedCapivara;
+import ai.competition.tiamat.ImprovedTiamat;
+import ai.competition.tiamat.Tiamat;
 import ai.core.AI;
+import ai.core.ContinuingAI;
+import ai.mcts.informedmcts.InformedNaiveMCTS;
 import ai.mcts.naivemcts.NaiveMCTS;
+import ai.montecarlo.lsi.LSI;
+import ai.portfolio.portfoliogreedysearch.PGSAI;
+import ai.puppet.PuppetSearchMCTS;
+import ai.scv.SCV;
+import ai.utalca.UTalcaBot;
+import idvrv.IDVRV_Bot;
 import rts.PhysicalGameState;
+import rts.UnitAction;
 import rts.units.UnitTypeTable;
 import tournaments.RoundRobinTournament;
 
@@ -30,10 +58,11 @@ public class Main {
             "maps\\10x10\\basesWorkers10x10.xml",
             "maps\\12x12\\basesWorkers12x12.xml",
             "maps\\16x16\\basesWorkers16x16.xml",
-            "maps\\melee14x12Mixed18.xml"};
+            "maps\\melee14x12Mixed18.xml",
+            "maps\\basesWorkers32x32A.xml"};
 
-    static final int MAP8X8 = 0, MAP10X10 = 1, MAP12X12 = 2, MAP16X16 = 3, MAP14X12MELEE18X = 4;
-    static final int CYCLES8X8 = 3000, CYCLES10x10 = 3250, CYCLES12x12 = 3500, CYCLES16x16 = 4000;
+    static final int MAP8X8 = 0, MAP10X10 = 1, MAP12X12 = 2, MAP16X16 = 3, MAP14X12MELEE18X = 4, MAP32x32 = 5;
+    static final int CYCLES8X8 = 3000, CYCLES10x10 = 3250, CYCLES12x12 = 3500, CYCLES16x16 = 4000, CYCLES32x32 = 8000;
 
     static AI maxPlayer = new UCTProbaInactionPruning(unitTypeTable, 0.6f), // Player at the top, Blue colored.
               minPlayer = new PlainUCT(unitTypeTable); // Player at the Bottom, Red colored.
@@ -60,18 +89,32 @@ public class Main {
 //            testAllRandomFixedPruningParametersVsUCT(MAP16X16, CYCLES16x16, 50, false, false);
 //            testAllRPPParametersVsUCT(MAP16X16, CYCLES16x16, 50, false, false);
 //        }
-        List<AI> AIs = new ArrayList<>();
-        AIs.add(new UCTFixedInactionPruning(unitTypeTable,1));
-        AIs.add(new UCTProbaInactionPruning(unitTypeTable,0f));
-        AIs.add(new UCTDynamicFixedInactionPruning(unitTypeTable,1,0));
-        AIs.add(new UCTDynamicProbaInactionPruning(unitTypeTable,0f,0.1f));
+        List<AI> AIs8x8 = new ArrayList<>();
+        AIs8x8.add(new UCTFixedInactionPruning(unitTypeTable,1));
+        AIs8x8.add(new UCTProbaInactionPruning(unitTypeTable,0f));
+        AIs8x8.add(new UCTDynamicFixedInactionPruning(unitTypeTable,1,0));
+        AIs8x8.add(new UCTDynamicProbaInactionPruning(unitTypeTable,0f,0.1f));
 
-        runTournament(AIs, MAP8X8, CYCLES8X8, 100, "tournament8x8.csv");
+        List<AI> AIs12x12 = new ArrayList<>();
+        AIs12x12.add(new UCTFixedInactionPruning(unitTypeTable, 5));
+        AIs12x12.add(new UCTProbaInactionPruning(unitTypeTable, 0.2f));
+        AIs12x12.add(new UCTDynamicProbaInactionPruning(unitTypeTable, 0.2f, 0.4f));
+
+        List<AI> AIs16x16 = new ArrayList<>();
+        AIs16x16.add(new UCTFixedInactionPruning(unitTypeTable, 1));
+        AIs16x16.add(new UCTProbaInactionPruning(unitTypeTable, 0.3f));
+
+
+//        runTournament(AIs16x16, MAP16X16, CYCLES16x16, 100, "tournament16x16.csv");
 //        testDynamicRFPParameterVsUCT(MAP8X8, CYCLES8X8, 50, 0, 10, true, false);
-//        AI mP = new UCTDynamicFixedInactionPruning(unitTypeTable,0,1);
+        AI mP = new UCTDynamicFixedInactionPruning(unitTypeTable,0,1);
 //        runOneMatch(mP, new PlainUCT(unitTypeTable), MAP8X8, 1, true, false);
 
-//        runMatches(mP, new NaiveMCTS(unitTypeTable),MAP8X8, CYCLES8X8,50, false, false);
+        System.out.println("P = 0.7 , 16x16");
+        runMatches(new NMCTSRandomInactivityFilteringProba(unitTypeTable,0.7f),
+                   new NaiveMCTS(unitTypeTable),
+                   MAP16X16, CYCLES16x16, 100,
+                   false, false);
 
 //        experiment.runSingleMatch(false, true, true, true, false);
 
@@ -370,8 +413,6 @@ public class Main {
                 false, false, false, unitTypeTable, null, output,
                 new PrintWriter(System.out), null);
     }
-
-
 
 
 }
