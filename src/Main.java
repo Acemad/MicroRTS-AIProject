@@ -15,6 +15,7 @@ import ai.RandomBiasedAI;
 import ai.abstraction.LightRush;
 import ai.abstraction.WorkerRush;
 import ai.abstraction.partialobservability.POLightRush;
+import ai.abstraction.partialobservability.POWorkerRush;
 import ai.abstraction.pathfinding.PathFinding;
 import ai.ahtn.AHTNAI;
 import ai.asymmetric.SSS.SSSmRTS;
@@ -28,6 +29,7 @@ import ai.core.AI;
 import ai.core.ContinuingAI;
 import ai.mcts.informedmcts.InformedNaiveMCTS;
 import ai.mcts.naivemcts.NaiveMCTS;
+import ai.mcts.uct.UCT;
 import ai.montecarlo.lsi.LSI;
 import ai.portfolio.portfoliogreedysearch.PGSAI;
 import ai.puppet.PuppetSearchMCTS;
@@ -89,34 +91,49 @@ public class Main {
 //            testAllRandomFixedPruningParametersVsUCT(MAP16X16, CYCLES16x16, 50, false, false);
 //            testAllRPPParametersVsUCT(MAP16X16, CYCLES16x16, 50, false, false);
 //        }
+        List<AI> competitionsAIs = new ArrayList<>();
+        competitionsAIs.add(new MixedBot(unitTypeTable));
+        competitionsAIs.add(new Izanagi(unitTypeTable));
+        competitionsAIs.add(new POLightRush(unitTypeTable));
+        competitionsAIs.add(new POWorkerRush(unitTypeTable));
+        competitionsAIs.add(new NaiveMCTS(unitTypeTable));
+        competitionsAIs.add(new UCT(unitTypeTable));
+        competitionsAIs.add(new RandomBiasedAI(unitTypeTable));
+
         List<AI> AIs8x8 = new ArrayList<>();
-        AIs8x8.add(new UCTFixedInactionPruning(unitTypeTable,1));
-        AIs8x8.add(new UCTProbaInactionPruning(unitTypeTable,0f));
         AIs8x8.add(new UCTDynamicFixedInactionPruning(unitTypeTable,1,0));
-        AIs8x8.add(new UCTDynamicProbaInactionPruning(unitTypeTable,0f,0.1f));
+        AIs8x8.add(new NMCTSRandomInactivityFilteringProba(unitTypeTable, 0.9f));
+        AIs8x8.addAll(competitionsAIs);
 
         List<AI> AIs12x12 = new ArrayList<>();
-        AIs12x12.add(new UCTFixedInactionPruning(unitTypeTable, 5));
-        AIs12x12.add(new UCTProbaInactionPruning(unitTypeTable, 0.2f));
         AIs12x12.add(new UCTDynamicProbaInactionPruning(unitTypeTable, 0.2f, 0.4f));
+        AIs12x12.add(new NMCTSRandomInactivityFilteringProba(unitTypeTable, 0f));
+        AIs12x12.addAll(competitionsAIs);
 
         List<AI> AIs16x16 = new ArrayList<>();
         AIs16x16.add(new UCTFixedInactionPruning(unitTypeTable, 1));
-        AIs16x16.add(new UCTProbaInactionPruning(unitTypeTable, 0.3f));
+        AIs16x16.add(new NMCTSRandomInactivityFilteringFixed(unitTypeTable, 0));
+        AIs16x16.addAll(competitionsAIs);
 
 
-//        runTournament(AIs16x16, MAP16X16, CYCLES16x16, 100, "tournament16x16.csv");
+        runTournament(AIs16x16, MAP8X8, CYCLES8X8, 100, "FinalTournament8x8.csv");
 //        testDynamicRFPParameterVsUCT(MAP8X8, CYCLES8X8, 50, 0, 10, true, false);
 //        AI mP = new UCTDynamicFixedInactionPruning(unitTypeTable,0,1);
 //        runOneMatch(mP, new PlainUCT(unitTypeTable), MAP8X8, 1, true, false);
 
-        System.out.println("Map 8x8");
-        testAllNMCTSRIFFParameters(MAP8X8, CYCLES8X8, 100, false, false);
 
-        /*runMatches(new NMCTSRandomInactivityFilteringFixed(unitTypeTable,0),
-                   new NaiveMCTS(unitTypeTable),
-                   MAP12X12, CYCLES12x12, 100,
-                   false, false);*/
+//        testAllNMCTSRIFFParameters(MAP8X8, CYCLES8X8, 100, false, false);
+        /*int[] params = new int[] {50, 100, 500, 1000, 5000, 10000};
+        for (int param : params) {
+            System.out.println("***** Experiment on : Map 12x12, n = " + param + " *************");
+
+            runMatches(new NMCTSRandomInactivityFilteringFixed(unitTypeTable, param),
+                       new NaiveMCTS(unitTypeTable),
+                       MAP12X12, CYCLES12x12, 100,
+                      false, false);
+        }*/
+
+
 
 //        experiment.runSingleMatch(false, true, true, true, false);
 
