@@ -4,11 +4,12 @@ import aes.nmcts.*;
 import aes.uct.PlainUCT;
 import aes.uct.UCTRandomPruningFixed;
 import aes.uct.UCTRandomPruningProba;
-import aes.uct.emptyactions.UCTDynamicFixedInactionPruning;
-import aes.uct.emptyactions.UCTDynamicProbaInactionPruning;
-import aes.uct.emptyactions.UCTFixedInactionPruning;
-import aes.uct.emptyactions.UCTProbaInactionPruning;
+import aes.uct.emptyactions.*;
+import ai.BranchingFactorCalculatorBigInteger;
+import ai.BranchingFactorCalculatorDouble;
+import ai.BranchingFactorCalculatorLong;
 import ai.GNS.Droplet;
+import ai.GNS.GuidedGreedyNaiveMCTS;
 import ai.JZ.MixedBot;
 import ai.PVAI.PVAIML_ED;
 import ai.RandomBiasedAI;
@@ -22,11 +23,14 @@ import ai.asymmetric.SSS.SSSmRTS;
 import ai.ccg.MicroCCG_v2;
 import ai.competition.IzanagiBot.Izanagi;
 import ai.competition.capivara.Capivara;
+import ai.competition.capivara.CmabAssymetricMCTS;
 import ai.competition.capivara.ImprovedCapivara;
 import ai.competition.tiamat.ImprovedTiamat;
 import ai.competition.tiamat.Tiamat;
 import ai.core.AI;
 import ai.core.ContinuingAI;
+import ai.evaluation.EvaluationFunction;
+import ai.evaluation.SimpleSqrtEvaluationFunction3;
 import ai.mcts.informedmcts.InformedNaiveMCTS;
 import ai.mcts.naivemcts.NaiveMCTS;
 import ai.mcts.uct.UCT;
@@ -36,16 +40,19 @@ import ai.puppet.PuppetSearchMCTS;
 import ai.scv.SCV;
 import ai.utalca.UTalcaBot;
 import idvrv.IDVRV_Bot;
-import rts.PhysicalGameState;
-import rts.UnitAction;
+import rts.*;
+import rts.units.Unit;
 import rts.units.UnitTypeTable;
 import tournaments.RoundRobinTournament;
+import util.Pair;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.PrintWriter;
 import java.io.Writer;
+import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -61,10 +68,12 @@ public class Main {
             "maps\\12x12\\basesWorkers12x12.xml",
             "maps\\16x16\\basesWorkers16x16.xml",
             "maps\\melee14x12Mixed18.xml",
-            "maps\\basesWorkers32x32A.xml"};
+            "maps\\basesWorkers32x32A.xml",
+            "maps\\24x24\\basesWorkers24x24.xml",
+            "maps\\GardenOfWar64x64.xml"};
 
-    static final int MAP8X8 = 0, MAP10X10 = 1, MAP12X12 = 2, MAP16X16 = 3, MAP14X12MELEE18X = 4, MAP32x32 = 5;
-    static final int CYCLES8X8 = 3000, CYCLES10x10 = 3250, CYCLES12x12 = 3500, CYCLES16x16 = 4000, CYCLES32x32 = 8000;
+    static final int MAP8X8 = 0, MAP10X10 = 1, MAP12X12 = 2, MAP16X16 = 3, MAP14X12MELEE18X = 4, MAP32x32 = 5, MAP24x24 = 6, MAP64x64 = 7;
+    static final int CYCLES8X8 = 3000, CYCLES10x10 = 3250, CYCLES12x12 = 3500, CYCLES16x16 = 4000, CYCLES24x24 = 8000, CYCLES32x32 = 12000, CYCLES64x64 = 24000;
 
     static AI maxPlayer = new UCTProbaInactionPruning(unitTypeTable, 0.6f), // Player at the top, Blue colored.
               minPlayer = new PlainUCT(unitTypeTable); // Player at the Bottom, Red colored.
@@ -76,6 +85,12 @@ public class Main {
 
         System.out.println("Blue (Player 0 Max) : " + maxPlayer.getClass().getSimpleName());
         System.out.println("Red  (Player 1 Min) : " + minPlayer.getClass().getSimpleName());
+    }
+
+    public static void initializeNoText(AI maxPlayer, AI minPlayer, int mapLocationIndex, int maxCycles) throws Exception {
+        physicalGameState = PhysicalGameState.load(mapLocations[mapLocationIndex], unitTypeTable);
+        experiment = new Experiments(maxPlayer, minPlayer, unitTypeTable, physicalGameState, maxCycles);
+//        experiment.setMaxCycles(maxCycles);
     }
 
     public static void main(String[] args) throws Exception {
@@ -99,6 +114,9 @@ public class Main {
         competitionsAIs.add(new NaiveMCTS(unitTypeTable));
         competitionsAIs.add(new UCT(unitTypeTable));
         competitionsAIs.add(new RandomBiasedAI(unitTypeTable));
+        // Newly Added
+        competitionsAIs.add(new Droplet(unitTypeTable));
+        competitionsAIs.add(new Capivara(unitTypeTable));
 
         List<AI> AIs8x8 = new ArrayList<>();
         AIs8x8.add(new UCTDynamicFixedInactionPruning(unitTypeTable,1,0));
@@ -110,13 +128,14 @@ public class Main {
         AIs12x12.add(new NMCTSRandomInactivityFilteringProba(unitTypeTable, 0f));
         AIs12x12.addAll(competitionsAIs);
 
+
         List<AI> AIs16x16 = new ArrayList<>();
         AIs16x16.add(new UCTFixedInactionPruning(unitTypeTable, 1));
         AIs16x16.add(new NMCTSRandomInactivityFilteringFixed(unitTypeTable, 0));
         AIs16x16.addAll(competitionsAIs);
 
 
-        runTournament(AIs16x16, MAP8X8, CYCLES8X8, 100, "FinalTournament8x8.csv");
+//        runTournament(AIs16x16, 10, MAP16X16, CYCLES16x16, 100, "FinalTournament16x16++.csv");
 //        testDynamicRFPParameterVsUCT(MAP8X8, CYCLES8X8, 50, 0, 10, true, false);
 //        AI mP = new UCTDynamicFixedInactionPruning(unitTypeTable,0,1);
 //        runOneMatch(mP, new PlainUCT(unitTypeTable), MAP8X8, 1, true, false);
@@ -132,6 +151,35 @@ public class Main {
                        MAP12X12, CYCLES12x12, 100,
                       false, false);
         }*/
+
+        /*runMatches(new POWorkerRush(unitTypeTable),
+                   new POLightRush(unitTypeTable),
+                   MAP16X16, CYCLES16x16, 20,
+                true, false);*/
+
+        //BF-
+        System.out.println("NaïveMCTS - MAP 16x16");
+        try {
+//            NMCTSRIPPBFExperiment(MAP8X8, 0.9f, 400, 100, false, 25);
+//            NMCTSRIPPBFExperiment(MAP12X12, 0f, 600, 100,  false, 25);
+//            NMCTSRIPPBFExperiment(MAP16X16, 0f, 1000, 100,  false, 25);
+
+//            NMCTSRIPPBFExperiment(MAP24x24, 0f, 1800, 100,  true, 25);
+//            NMCTSRIPPBFExperiment(MAP32x32, 0f, 200, 100,  false, 25);
+
+            //BF-NMCTS
+//            NMCTSRIPPBFExperiment(MAP8X8, 1f, 400, 100,  false, 25);
+//          NMCTSRIPPBFExperiment(MAP12X12, 1f, 600, 100,  false, 25);
+          NMCTSRIPPBFExperiment(MAP16X16, 0f, 1000, 100,  false, 25);
+
+//          NMCTSRIPPBFExperiment(MAP24x24, 1f, 200, 100,  false, 25);
+//          NMCTSRIPPBFExperiment(MAP32x32, 1f, 200, 100,  false, 25);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+
+
 
 
 
@@ -447,8 +495,34 @@ public class Main {
         experiment.runMultipleMatchesSymmetric(numberOfMatches, visualize, printAIStats);
     }
 
+    public static GameState runOneMatchReturnGameState(AI maxPlayer, AI minPlayer, int mapLocationIndex, int maxCycles,
+                                                       boolean visualize, boolean printAIStats) throws Exception {
+        initializeNoText(maxPlayer, minPlayer, mapLocationIndex, maxCycles);
+        experiment.resetAll();
+        experiment.runSingleMatchNoText(false, visualize, true, printAIStats, false);
+        return experiment.getGameState();
+    }
+
+    public static int[] getUnitCountForEachPlayer(GameState gameState) {
+        int[] counts = new int[] {0,0};
+        for (Unit unit : gameState.getUnits())
+            if (unit.getPlayer() >= 0)
+                counts[unit.getPlayer()]++;
+        return counts;
+    }
+
+    public static int getTrappedUnitsCount(GameState gameState, int player) {
+        int count = 0;
+        for (Unit unit : gameState.getUnits()) {
+            if ((unit.getPlayer() == player) && unit.getUnitActions(gameState).size() <= 1)
+                count++;
+        }
+        return count;
+    }
+
     // WIP
-    public static void runTournament(List<AI> AIs, int mapLocationIndex, int maxCycles,
+    // ThisAIOnly : -1 for full tournament. Specific AI index, for that AI only
+    public static void runTournament(List<AI> AIs, int thisAIOnly, int mapLocationIndex, int maxCycles,
                                      int iterations, String filename) throws Exception {
 
         RoundRobinTournament tournament = new RoundRobinTournament(AIs);
@@ -460,11 +534,369 @@ public class Main {
 
         tournament.setUSE_CONTINUING_ON_INTERRUPTIBLE(false);
 
-        tournament.runTournament(-1, maps, iterations, maxCycles, 100, -1,
+        tournament.runTournament(thisAIOnly, maps, iterations, maxCycles, 100, -1,
                 1000, 1000, true, false,
                 false, false, false, unitTypeTable, null, output,
                 new PrintWriter(System.out), null);
     }
+
+
+    private static void simulate(GameState gameState, int simTime) throws Exception {
+        boolean gameOver = false;
+        AI playoutPolicy = new RandomBiasedAI(unitTypeTable);
+
+        do {
+            if (gameState.isComplete())
+                gameOver = gameState.cycle();
+            else {
+                gameState.issue(playoutPolicy.getAction(0, gameState));
+                gameState.issue(playoutPolicy.getAction(1, gameState));
+            }
+        } while (!gameOver && gameState.getTime() < simTime);
+    }
+
+    private static void UCTRIPFBranchingFactorTest(int mapLocationIndex, int allowedInactions, int maxCycles, int timeBudget, boolean visualize) throws Exception{
+
+        GameState gameState = runOneMatchReturnGameState(new UCTFixedInactionPruning(unitTypeTable, allowedInactions),
+                new UCT(unitTypeTable), mapLocationIndex, maxCycles, visualize, false);
+
+        double branchingFactor = BranchingFactorCalculatorDouble.branchingFactorByResourceUsageFast(gameState.clone(),0);
+        int unitsCount = getUnitCountForEachPlayer(gameState)[0];
+        double averageUnitActions = Math.pow(branchingFactor, (1.0 / unitsCount));
+
+        UCTFixedInactionPruningNode tree = new UCTFixedInactionPruningNode(gameState.clone(), null, 0);
+        EvaluationFunction evaluationFunction = new SimpleSqrtEvaluationFunction3();
+
+        CustomPlayerActionGenerator.IPAsRemoved = 0;
+
+        long startTime = System.currentTimeMillis();
+        long endTime = startTime;
+
+        while ((endTime - startTime) <  timeBudget) {
+            UCTFixedInactionPruningNode selected = tree.selectLeaf(0, startTime + timeBudget, 10,
+                    evaluationFunction.upperBound(gameState), allowedInactions);
+
+            if (selected != null) {
+                GameState simGameState = selected.getGameState().clone();
+                simulate(simGameState, simGameState.getTime() + 100);
+
+                // (3) Evaluate the resulting state.
+                double evaluation = evaluationFunction.evaluate(0, 1, simGameState);
+                // Apply a discount factor.
+                int time = simGameState.getTime() - gameState.getTime();
+                evaluation = evaluation * Math.pow(0.99, time/10.0); // Discount factor.
+
+                // (4) Backpropagate scores and visit counts.
+                while (selected != null) {
+                    selected.updateAccumulatedEvaluation(evaluation);
+                    selected.incrementVisitCount();
+                    selected = selected.getParent();
+                }
+            }
+            endTime = System.currentTimeMillis();
+        }
+
+        System.out.println("Visited Actions: " + tree.getVisitCount());
+        System.out.println("Branching Factor: " + branchingFactor);
+        System.out.println("Unit Count: " + unitsCount);
+        System.out.println("Avg UnitActions: " + averageUnitActions);
+        System.out.println("Trapped: " + getTrappedUnitsCount(gameState,0));
+        System.out.println("IPAs Removed: " + CustomPlayerActionGenerator.IPAsRemoved);
+
+        CustomPlayerActionGenerator.IPAsRemoved = 0;
+    }
+
+    private static void UCTRIPPBranchingFactorTest(int mapLocationIndex, float allowProbability, int maxCycles, int timeBudget, boolean visualize) throws Exception {
+
+        GameState gameState = runOneMatchReturnGameState(new UCTProbaInactionPruning(unitTypeTable, allowProbability),
+                new UCT(unitTypeTable), mapLocationIndex, maxCycles, visualize, false);
+
+        double branchingFactor = BranchingFactorCalculatorDouble.branchingFactorByResourceUsageFast(gameState.cloneIssue(new PlayerAction()),0);
+        int unitsCount = getUnitCountForEachPlayer(gameState)[0];
+        double averageUnitActions = Math.pow(branchingFactor, (1.0 / unitsCount));
+
+        UCTProbaInactionPruningNode tree = new UCTProbaInactionPruningNode(gameState.clone(), null, 0);
+        EvaluationFunction evaluationFunction = new SimpleSqrtEvaluationFunction3();
+
+        CustomPlayerActionGenerator.IPAsRemoved = 0;
+
+        List<UCTProbaInactionPruningNode> nodes = new LinkedList<>();
+        List<PlayerAction> playerActions = new LinkedList<>();
+        nodes.add(tree);
+
+        long startTime = System.currentTimeMillis();
+        long endTime = startTime;
+
+        while ((endTime - startTime) <  timeBudget) {
+            UCTProbaInactionPruningNode selected = tree.selectLeaf(0, startTime + timeBudget, 10,
+                    evaluationFunction.upperBound(gameState), allowProbability);
+
+            if (selected != null) {
+                if (!nodes.contains(selected)) nodes.add(selected);
+
+                // To identify allowed IPAs.
+                int selectedIndex = selected.getParent().getChildren().indexOf(selected);
+                playerActions.add(selected.getParent().getActions().get(selectedIndex));
+                //--------------------------
+
+                GameState simGameState = selected.getGameState().clone();
+                simulate(simGameState, simGameState.getTime() + 100);
+
+                // (3) Evaluate the resulting state.
+                double evaluation = evaluationFunction.evaluate(0, 1, simGameState);
+                // Apply a discount factor.
+                int time = simGameState.getTime() - gameState.getTime();
+                evaluation = evaluation * Math.pow(0.99, time/10.0); // Discount factor.
+
+                // (4) Backpropagate scores and visit counts.
+                while (selected != null) {
+                    selected.updateAccumulatedEvaluation(evaluation);
+                    selected.incrementVisitCount();
+                    selected = selected.getParent();
+                }
+            }
+            endTime = System.currentTimeMillis();
+        }
+
+        int ipasAllowed = getIpasAllowed(playerActions);
+
+
+        System.out.println("Explored Actions: " + nodes.size());
+        System.out.println("Visits Count: " + tree.getVisitCount());
+        System.out.println("Branching Factor: " + branchingFactor);
+        System.out.println("Unit Count: " + unitsCount);
+        System.out.println("Avg UnitActions: " + averageUnitActions);
+        System.out.println("Trapped: " + getTrappedUnitsCount(gameState,0));
+        System.out.println("IPAs Removed: " + CustomPlayerActionGenerator.IPAsRemoved);
+        System.out.println("IPAs Allowed: " + ipasAllowed);
+
+        CustomPlayerActionGenerator.IPAsRemoved = 0;
+    }
+
+    private static void NMCTSRIPFBranchingFactorTest(int mapLocationIndex, int allowedInactions, int maxCycles, int timeBudget, boolean visualize) throws Exception {
+
+        GameState gameState = runOneMatchReturnGameState(new NMCTSRandomInactivityFilteringFixed(unitTypeTable, allowedInactions),
+                                                         new NaiveMCTS(unitTypeTable),
+                                                         mapLocationIndex, maxCycles, visualize, false);
+
+        double branchingFactor = BranchingFactorCalculatorDouble.branchingFactorByResourceUsageFast(gameState.cloneIssue(new PlayerAction()),0);
+        int unitsCount = getUnitCountForEachPlayer(gameState)[0];
+        double averageUnitActions = Math.pow(branchingFactor, (1.0 / unitsCount));
+
+
+        // One MCTS iteration
+        NMCTSRandomInactivityFilteringFixedNode_BFTest tree = new
+                NMCTSRandomInactivityFilteringFixedNode_BFTest(0, gameState.clone(), null, 0, true);
+        EvaluationFunction evaluationFunction = new SimpleSqrtEvaluationFunction3();
+
+        NMCTSRandomInactivityFilteringFixedNode_BFTest.IPAsRemoved = 0;
+        List<NMCTSRandomInactivityFilteringFixedNode_BFTest> nodes = new LinkedList<>();
+//        nodes.add(tree);
+
+        long startTime = System.currentTimeMillis();
+        long endTime = startTime;
+
+        while ((endTime - startTime) <  timeBudget) {
+            NMCTSRandomInactivityFilteringFixedNode_BFTest selected = tree.selectLeaf(0, 0.4f, 0.0f, 0.3f,
+                    NMCTSRandomInactivityFilteringFixedNode_BFTest.EPSILON_GREEDY, 1, 0,
+                    evaluationFunction.upperBound(gameState), allowedInactions);
+
+            if (selected != null) {
+                if (!nodes.contains(selected)) nodes.add(selected);
+                // (2) Simulation and evaluation
+                GameState simGameState = selected.getGameState().clone();
+                simulate(simGameState, simGameState.getTime() + 100);
+
+                int time = simGameState.getTime() - gameState.getTime();
+                double evaluation = evaluationFunction.evaluate(0, 1, simGameState);
+                evaluation *= Math.pow(0.99, time / 10.0);
+
+                // (3) Backpropagation
+                selected.backpropagate(evaluation, null);
+            }
+            endTime = System.currentTimeMillis();
+        }
+
+        List<PlayerAction> playerActions = new LinkedList<>();
+        for (NMCTSRandomInactivityFilteringFixedNode_BFTest node : nodes) {
+            int index = node.getParent().getChildren().indexOf(node);
+            playerActions.add(node.getParent().getActions().get(index));
+        }
+        int ipasAllowed = getIpasAllowed(playerActions);
+
+        System.out.println("Explored Actions: " + nodes.size());
+        System.out.println("Visited Actions: " + tree.getVisitCount());
+        System.out.println("Branching Factor: " + branchingFactor);
+        System.out.println("Unit Count: " + unitsCount);
+        System.out.println("Avg UnitActions: " + averageUnitActions);
+        System.out.println("Trapped: " + getTrappedUnitsCount(gameState,0));
+        System.out.println("IPAs Removed: " + NMCTSRandomInactivityFilteringFixedNode_BFTest.IPAsRemoved);
+        System.out.println("IPAs Allowed: " + ipasAllowed);
+
+        NMCTSRandomInactivityFilteringFixedNode_BFTest.IPAsRemoved = 0;
+    }
+
+    private static void NMCTSRIPPBranchingFactorTest(int mapLocationIndex, float allowProbability, int maxCycles, int timeBudget, boolean visualize) throws Exception {
+
+        GameState gameState = runOneMatchReturnGameState(new NMCTSRandomInactivityFilteringProba(unitTypeTable, allowProbability),
+                new NaiveMCTS(unitTypeTable),
+                mapLocationIndex, maxCycles, visualize, false);
+
+        long branchingFactor = BranchingFactorCalculatorLong.branchingFactorByResourceUsageSeparatingFast(gameState.clone(),0);
+        int unitsCount = getUnitCountForEachPlayer(gameState)[0];
+        double averageUnitActions = Math.pow(branchingFactor, (1.0 / unitsCount));
+        double ipasCount = Math.round(branchingFactor - Math.pow(averageUnitActions - 1, unitsCount));
+
+
+        // One MCTS iteration
+        NMCTSRandomInactivityFilteringProbaNode_BFTest tree = new
+                NMCTSRandomInactivityFilteringProbaNode_BFTest(0, gameState.clone(), null, 0, true);
+        EvaluationFunction evaluationFunction = new SimpleSqrtEvaluationFunction3();
+
+        NMCTSRandomInactivityFilteringProbaNode_BFTest.IPAsRemoved = 0;
+        List<NMCTSRandomInactivityFilteringProbaNode_BFTest> nodes = new LinkedList<>();
+
+        long startTime = System.currentTimeMillis();
+        long endTime = startTime;
+
+        while ((endTime - startTime) <  timeBudget) {
+            NMCTSRandomInactivityFilteringProbaNode_BFTest selected = tree.selectLeaf(0, 0.4f, 0.0f, 0.3f,
+                    NMCTSRandomInactivityFilteringProbaNode_BFTest.EPSILON_GREEDY, 1, 0,
+                    evaluationFunction.upperBound(gameState), allowProbability);
+
+            if (selected != null) {
+                if (!nodes.contains(selected)) nodes.add(selected);
+                // (2) Simulation and evaluation
+                GameState simGameState = selected.getGameState().clone();
+                simulate(simGameState, simGameState.getTime() + 100);
+
+                int time = simGameState.getTime() - gameState.getTime();
+                double evaluation = evaluationFunction.evaluate(0, 1, simGameState);
+                evaluation *= Math.pow(0.99, time / 10.0);
+
+                // (3) Backpropagation
+                selected.backpropagate(evaluation, null);
+            }
+            endTime = System.currentTimeMillis();
+        }
+
+        List<PlayerAction> playerActions = new LinkedList<>();
+        for (NMCTSRandomInactivityFilteringProbaNode_BFTest node : nodes) {
+            int index = node.getParent().getChildren().indexOf(node);
+            playerActions.add(node.getParent().getActions().get(index));
+        }
+
+        int ipasAllowed = getIpasAllowed(playerActions);
+        int exploredActions = nodes.size();
+        int visitsCount = tree.getVisitCount();
+        int trappedUnits = getTrappedUnitsCount(gameState, 0);
+        long ipasRemoved = tree.getRejectedActions().size();
+
+        System.out.print(branchingFactor + "\t");
+        System.out.print(ipasCount + "\t");
+        System.out.print(exploredActions + "\t");
+        System.out.print(ipasRemoved + "\t");
+        System.out.print(ipasAllowed + "\t");
+        System.out.print(unitsCount + "\t");
+        System.out.print(trappedUnits + "\t");
+        System.out.print(averageUnitActions + "\t");
+        System.out.println(visitsCount + "\t");
+
+        NMCTSRandomInactivityFilteringProbaNode_BFTest.IPAsRemoved = 0;
+    }
+
+    private static void NMCTSRIPPBranchingFactorTestSwitched(int mapLocationIndex, float allowProbability, int maxCycles, int timeBudget, boolean visualize) throws Exception {
+
+        GameState gameState = runOneMatchReturnGameState(new NaiveMCTS(unitTypeTable),
+                new NMCTSRandomInactivityFilteringProba(unitTypeTable, allowProbability),
+                mapLocationIndex, maxCycles, visualize, false);
+
+        double branchingFactor = BranchingFactorCalculatorDouble.branchingFactorByResourceUsageSeparatingFast(gameState.clone(),1);
+        int unitsCount = getUnitCountForEachPlayer(gameState)[1];
+        double averageUnitActions = Math.pow(branchingFactor, (1.0 / unitsCount));
+        double ipasCount = Math.round(branchingFactor - Math.pow(averageUnitActions - 1, unitsCount));
+
+
+        // One MCTS iteration
+        NMCTSRandomInactivityFilteringProbaNode_BFTest tree = new
+                NMCTSRandomInactivityFilteringProbaNode_BFTest(1, gameState.clone(), null, 0, true);
+        EvaluationFunction evaluationFunction = new SimpleSqrtEvaluationFunction3();
+
+        NMCTSRandomInactivityFilteringProbaNode_BFTest.IPAsRemoved = 0;
+        List<NMCTSRandomInactivityFilteringProbaNode_BFTest> nodes = new LinkedList<>();
+
+        long startTime = System.currentTimeMillis();
+        long endTime = startTime;
+
+        while ((endTime - startTime) <  timeBudget) {
+            NMCTSRandomInactivityFilteringProbaNode_BFTest selected = tree.selectLeaf(1, 0.4f, 0.0f, 0.3f,
+                    NMCTSRandomInactivityFilteringProbaNode_BFTest.EPSILON_GREEDY, 1, 0,
+                    evaluationFunction.upperBound(gameState), allowProbability);
+
+            if (selected != null) {
+                if (!nodes.contains(selected)) nodes.add(selected);
+                // (2) Simulation and evaluation
+                GameState simGameState = selected.getGameState().clone();
+                simulate(simGameState, simGameState.getTime() + 100);
+
+                int time = simGameState.getTime() - gameState.getTime();
+                double evaluation = evaluationFunction.evaluate(1, 0, simGameState);
+                evaluation *= Math.pow(0.99, time / 10.0);
+
+                // (3) Backpropagation
+                selected.backpropagate(evaluation, null);
+            }
+            endTime = System.currentTimeMillis();
+        }
+
+        List<PlayerAction> playerActions = new LinkedList<>();
+        for (NMCTSRandomInactivityFilteringProbaNode_BFTest node : nodes) {
+            int index = node.getParent().getChildren().indexOf(node);
+            playerActions.add(node.getParent().getActions().get(index));
+        }
+
+        int ipasAllowed = getIpasAllowed(playerActions);
+        int exploredActions = nodes.size();
+        int visitsCount = tree.getVisitCount();
+        int trappedUnits = getTrappedUnitsCount(gameState, 1);
+        long ipasRemoved = NMCTSRandomInactivityFilteringProbaNode_BFTest.IPAsRemoved;
+
+        System.out.print(branchingFactor + "\t");
+        System.out.print(ipasCount + "\t");
+        System.out.print(exploredActions + "\t");
+        System.out.print(ipasRemoved + "\t");
+        System.out.print(ipasAllowed + "\t");
+        System.out.print(unitsCount + "\t");
+        System.out.print(trappedUnits + "\t");
+        System.out.print(averageUnitActions + "\t");
+        System.out.println(visitsCount + "\t");
+
+        NMCTSRandomInactivityFilteringProbaNode_BFTest.IPAsRemoved = 0;
+    }
+
+    private static int getIpasAllowed(List<PlayerAction> playerActions) {
+
+        int ipasAllowed = 0;
+        for (PlayerAction playerAction : playerActions) {
+            for (Pair<Unit, UnitAction> unitActionPair : playerAction.getActions())
+                if (unitActionPair.m_b.getType() == UnitAction.TYPE_NONE) {
+                    ipasAllowed++;
+                    break;
+                }
+        }
+        return ipasAllowed;
+    }
+
+    public static void NMCTSRIPPBFExperiment(int mapLocationIndex, float allowProbability, int maxCycles, int timeBudget, boolean visualize, int nbIterations) throws Exception {
+
+        for (int i = 0; i < nbIterations; i++)
+            NMCTSRIPPBranchingFactorTest(mapLocationIndex, allowProbability, maxCycles, timeBudget, visualize);
+        System.out.println("------------ Position Switch ----------------");
+        for (int i = 0; i < nbIterations; i++)
+            NMCTSRIPPBranchingFactorTestSwitched(mapLocationIndex, allowProbability, maxCycles, timeBudget, visualize);
+    }
+
+
 
 
 }
