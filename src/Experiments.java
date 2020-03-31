@@ -99,12 +99,80 @@ public class Experiments {
 
     }
 
+    public String runSingleMatchNoText(boolean visualize) throws Exception {
+
+        JFrame window = null;
+        if (visualize)
+            window = PhysicalGameStatePanel.newVisualizer(gameState,640,640, false, PhysicalGameStatePanel.COLORSCHEME_BLACK);
+
+
+        long nextUpdateTime = System.currentTimeMillis() + period;
+        do {
+            if (System.currentTimeMillis() >= nextUpdateTime) {
+                PlayerAction maxAction, minAction;
+
+                maxAction = maxPlayer.getAction(maxID, gameState);
+                minAction = minPlayer.getAction(minID, gameState);
+
+                gameState.issueSafe(maxAction);
+                gameState.issueSafe(minAction);
+
+                gameOver = gameState.cycle();
+                if (visualize)
+                    window.repaint();
+                else {
+                    System.out.print("[Running] ");
+                    printCurrentCycle();
+                }
+                nextUpdateTime += period;
+            } else {
+                try {
+                    Thread.sleep(1);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+        } while (!gameOver && gameState.getTime() < maxCycles);
+
+        maxPlayer.gameOver(gameState.winner());
+        minPlayer.gameOver(gameState.winner());
+
+        if (visualize) window.dispose();
+
+        if (gameState.winner() < 0) {
+            draws++;
+            return "No One (Draw)";
+        }
+        else if (gameState.winner() == maxID) {
+            maxWins++;
+            return maxPlayer.getClass().getSimpleName() + " (P0Max)";
+        }
+        else {
+            minWins++;
+            return minPlayer.getClass().getSimpleName() + " (P1Min)";
+        }
+
+    }
+
     public void runSingleMatch(boolean switchPos, boolean visualize, boolean clearStats, boolean printStats, boolean reset) throws Exception{
 
         if (switchPos) switchPositions();
 
         String outcome = runSingleMatch(visualize);
         System.out.println("Match Winner : " + outcome + " in " + gameState.getTime() + " cycle.");
+
+        if (switchPos) switchPositions();
+        if (printStats) printAIStats();
+        if (clearStats) resetStats();
+        if (reset) resetAll();
+    }
+
+    public void runSingleMatchNoText(boolean switchPos, boolean visualize, boolean clearStats, boolean printStats, boolean reset) throws Exception{
+
+        if (switchPos) switchPositions();
+
+        String outcome = runSingleMatch(visualize);
 
         if (switchPos) switchPositions();
         if (printStats) printAIStats();
@@ -256,6 +324,10 @@ public class Experiments {
         int temp = maxID;
         maxID = minID;
         minID = temp;
+    }
+
+    public GameState getGameState() {
+        return gameState;
     }
 
     public void setMaxCycles(int maxCycles) {
