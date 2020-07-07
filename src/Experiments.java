@@ -50,6 +50,7 @@ public class Experiments {
             window = PhysicalGameStatePanel.newVisualizer(gameState,640,640, false, PhysicalGameStatePanel.COLORSCHEME_BLACK);
 
 
+
         long nextUpdateTime = System.currentTimeMillis() + period;
         do {
             if (System.currentTimeMillis() >= nextUpdateTime) {
@@ -90,11 +91,11 @@ public class Experiments {
         }
         else if (gameState.winner() == maxID) {
             maxWins++;
-            return maxPlayer.getClass().getSimpleName() + " (P0Max)";
+            return maxPlayer.toString() + " (P0Max)";
         }
         else {
             minWins++;
-            return minPlayer.getClass().getSimpleName() + " (P1Min)";
+            return minPlayer.toString() + " (P1Min)";
         }
 
     }
@@ -239,8 +240,8 @@ public class Experiments {
 
     public void printFinalStats() {
         System.out.println("Final Stats : **************************************************************");
-        System.out.println(maxPlayer.getClass().getSimpleName() + " (P0 Max) Wins: " + maxWins);
-        System.out.println(minPlayer.getClass().getSimpleName() + " (P1 Min) Wins: " + minWins);
+        System.out.println(maxPlayer.toString() + " (P0 Max) Wins: " + maxWins);
+        System.out.println(minPlayer.toString() + " (P1 Min) Wins: " + minWins);
         System.out.println("Draws: " + draws);
         printCurrentStats();
     }
