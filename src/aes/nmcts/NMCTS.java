@@ -52,6 +52,12 @@ public class NMCTS extends AIWithComputationBudget implements InterruptibleAI {
                 NMCTSNode.EPSILON_GREEDY, new RandomBiasedAI(), new SimpleSqrtEvaluationFunction3(), true);
     }
 
+    public NMCTS(UnitTypeTable unitTypeTable, int simulationTime, int maxDepth) {
+        this(unitTypeTable);
+        this.simulationTime = simulationTime;
+        this.maxDepth = maxDepth;
+    }
+
     /**
      * Constructs the controller with the specified time and iterations budget
      *

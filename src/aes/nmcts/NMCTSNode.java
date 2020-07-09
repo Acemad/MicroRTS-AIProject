@@ -30,7 +30,7 @@ public class NMCTSNode {
 
     // NaïveMCTS Specific properties ***********************************************
     private boolean exploreNonSampledActions = true; // to force the exploration of unvisited unit actions
-    private HashMap<BigInteger, NMCTSNode> childrenMap = new LinkedHashMap<>(); // Maps a binInteger to a node
+    private HashMap<BigInteger, NMCTSNode> childrenMap = new LinkedHashMap<>(); // Maps a bigInteger to a node
     private List<UnitActionsTableElement> unitActionsTable; // Each unit's actions and their evaluation and visit count
     private BigInteger [] multipliers; // For action code calculation
 
@@ -301,8 +301,9 @@ public class NMCTSNode {
 
         /* *****************************************************************************************************
          * Phase 2 : Select the best combination that results in a valid playerAction by epsilon greedy sampling.
-         * Compute the resource usage of the unit actions in the current game state.
          * *****************************************************************************************************/
+
+        // Compute the resource usage of the unit actions in the current game state.
         ResourceUsage currentResourceUsage = new ResourceUsage();
         for (Unit unit : gameState.getUnits()) {
             UnitAction unitAction = gameState.getUnitAction(unit);
@@ -375,7 +376,7 @@ public class NMCTSNode {
 
         // Check whether a node of the same playerActionCode already exists.
         NMCTSNode oldChild = childrenMap.get(playerActionCode);
-        if (oldChild == null) { // If no node with the same playerActionCode exists, create one.
+        if (oldChild == null) { // If no node with the same playerActionCode exists, create one. Expansion.
             actions.add(playerAction);
             GameState newGameState = gameState.cloneIssue(playerAction);
             NMCTSNode newChild = new NMCTSNode(player, newGameState.clone(), this, nodeID, exploreNonSampledActions);
@@ -405,7 +406,7 @@ public class NMCTSNode {
 
             // For each unitAction in the playerAction, update the respective accumulated evaluation and visit count.
             for (Pair<Unit, UnitAction> unitAction : playerAction.getActions()) {
-                // Extract the unit's relevant unitActionsTable element.
+                // Extract the unit's relevant unitActionTable element.
                 UnitActionsTableElement element = getActionTableElement(unitAction.m_a);
                 index = element.actions.indexOf(unitAction.m_b); // Extract the index of the chosen unitAction
 
