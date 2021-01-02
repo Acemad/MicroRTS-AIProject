@@ -49,15 +49,18 @@ public class Experiments {
         if (visualize)
             window = PhysicalGameStatePanel.newVisualizer(gameState,640,640, false, PhysicalGameStatePanel.COLORSCHEME_BLACK);
 
-
+        AI maxPlayerClone = maxPlayer.clone();
+        AI minPlayerClone = minPlayer.clone();
+        maxPlayerClone.reset();
+        minPlayerClone.reset();
 
         long nextUpdateTime = System.currentTimeMillis() + period;
         do {
             if (System.currentTimeMillis() >= nextUpdateTime) {
                 PlayerAction maxAction, minAction;
 
-                maxAction = maxPlayer.getAction(maxID, gameState);
-                minAction = minPlayer.getAction(minID, gameState);
+                maxAction = maxPlayerClone.getAction(maxID, gameState);
+                minAction = minPlayerClone.getAction(minID, gameState);
 
                 gameState.issueSafe(maxAction);
                 gameState.issueSafe(minAction);
@@ -80,8 +83,8 @@ public class Experiments {
 
         } while (!gameOver && gameState.getTime() < maxCycles);
 
-        maxPlayer.gameOver(gameState.winner());
-        minPlayer.gameOver(gameState.winner());
+        maxPlayerClone.gameOver(gameState.winner());
+        minPlayerClone.gameOver(gameState.winner());
 
         if (visualize) window.dispose();
 
@@ -91,11 +94,11 @@ public class Experiments {
         }
         else if (gameState.winner() == maxID) {
             maxWins++;
-            return maxPlayer.toString() + " (P0Max)";
+            return maxPlayerClone.toString() + " (P0Max)";
         }
         else {
             minWins++;
-            return minPlayer.toString() + " (P1Min)";
+            return minPlayerClone.toString() + " (P1Min)";
         }
 
     }
